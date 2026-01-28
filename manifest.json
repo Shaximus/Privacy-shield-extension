@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "AI Privacy Shield",
+  "version": "1.4.0",
+  "description": "Block AI surveillance (keystroke logging, session recording, telemetry) while keeping AI platforms functional. Based on documented evidence of Anthropic, OpenAI, and others.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ai-privacy-shield@reflexionsoftware.com",
+      "strict_min_version": "109.0"
+    }
+  },
+  "permissions": [
+    "cookies",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "privacy",
+    "storage",
+    "tabs",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "surveillance_blocklist",
+        "enabled": true,
+        "path": "rules/blocklist.json"
+      },
+      {
+        "id": "google_header_scrub",
+        "enabled": true,
+        "path": "rules/google_header_scrub.json"
+      }
+    ]
+  }
+}

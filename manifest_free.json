@@ -1,0 +1,49 @@
+{
+    "manifest_version": 3,
+    "name": "AI Privacy Shield - Free",
+    "version": "1.4.0",
+    "description": "Block AI surveillance from major platforms. Free tier blocks 10 core trackers. Upgrade to Premium for full 37+ tracker protection.",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "ai-privacy-shield-free@reflexionsoftware.com",
+            "strict_min_version": "109.0"
+        }
+    },
+    "permissions": [
+        "cookies",
+        "declarativeNetRequest",
+        "declarativeNetRequestFeedback",
+        "privacy",
+        "storage",
+        "tabs"
+    ],
+    "host_permissions": [
+        "https://*/*",
+        "http://*/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup_free.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "surveillance_blocklist",
+                "enabled": true,
+                "path": "rules/blocklist_free.json"
+            }
+        ]
+    }
+}

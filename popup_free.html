@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Privacy Shield - Free</title>
+  <style>
+    body {
+      width: 350px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      background: #1a1a1a;
+      color: #e0e0e0;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 15px 0;
+      color: #00ff00;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .shield-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .stats-container {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #3a3a3a;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #3a3a3a;
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .stat-label {
+      color: #aaa;
+      font-size: 13px;
+    }
+
+    .stat-value {
+      color: #ff4444;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .total-blocked {
+      font-size: 32px;
+      font-weight: bold;
+      color: #ff4444;
+      text-align: center;
+      margin: 15px 0;
+    }
+
+    .blocked-label {
+      text-align: center;
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .domain-list {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+
+    .domain-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 12px;
+      border-bottom: 1px solid #333;
+    }
+
+    .domain-name {
+      color: #aaa;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 220px;
+    }
+
+    .domain-count {
+      color: #ff4444;
+      font-weight: bold;
+      margin-left: 15px;
+      margin-right: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+
+    .reset-button {
+      background: #ff4444;
+      color: white;
+    }
+
+    .reset-button:hover {
+      background: #ff6666;
+    }
+
+    .evidence-button {
+      background: #444;
+      color: #00ff00;
+    }
+
+    .evidence-button:hover {
+      background: #555;
+    }
+
+    .status {
+      text-align: center;
+      padding: 8px;
+      background: #2a2a2a;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 10px;
+      color: #666;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <img src="animated-icons/frame_060.png" class="shield-icon" alt="AI Privacy Shield" />
+    AI Privacy Shield
+  </h1>
+
+  <div class="status">
+    ✓ ACTIVE - Surveillance Blocked
+  </div>
+
+  <div class="total-blocked" id="totalBlocked">0</div>
+  <div class="blocked-label">Surveillance Requests Blocked</div>
+
+  <div class="stats-container" id="tierStatus" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.1) 100%); border: 1px solid rgba(245, 158, 11, 0.3);">
+    <div style="text-align: center; margin-bottom: 8px;">
+      <div style="font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">Protection Level</div>
+      <div style="font-size: 16px; font-weight: 700; color: #f59e0b; margin: 4px 0;" id="trialStatus">FREE TIER</div>
+      <div style="font-size: 13px; color: #ccc;"><span id="daysRemaining">10</span> trackers blocked • <strong>27+ more in Premium</strong></div>
+    </div>
+    <button class="upgrade-button" id="upgradeButton" style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); color: white; margin-top: 8px; font-weight: 600;">
+      🛡️ Get Premium - Full 37+ Tracker Protection
+    </button>
+    <div style="text-align: center; font-size: 10px; color: #888; margin-top: 6px;">
+      One-time purchase on Chrome Web Store
+    </div>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-row">
+      <span class="stat-label">Protected Since</span>
+      <span class="stat-value" id="protectedSince">---</span>
+    </div>
+  </div>
+
+  <div class="stats-container">
+    <div style="font-size: 13px; color: #aaa; margin-bottom: 8px; font-weight: 600;">
+      Blocked by Surveillance Company:
+    </div>
+    <div class="domain-list" id="domainList">
+      <div style="text-align: center; color: #666; padding: 20px; font-size: 12px;">
+        No surveillance blocked yet
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-row">
+      <span class="stat-label" id="strictLabel">Strict Google Mode: OFF</span>
+      <span class="stat-value">
+        <input type="checkbox" id="strictToggle" style="width: 20px; height: 20px; cursor: pointer;" />
+      </span>
+    </div>
+    <div style="font-size:11px;color:#888;margin-top:6px;">
+      Blocks Google analytics cookies (_gcl_*, _ga*, NID). May sign you out or disable some account features.
+    </div>
+  </div>
+
+  <button class="reset-button" id="resetButton">Reset Statistics</button>
+  <button class="evidence-button" id="evidenceButton">View Evidence</button>
+  <button class="evidence-button" id="pauseSiteButton">⏸️ Pause on This Site (10 min)</button>
+  <button class="evidence-button" id="reportTrackerButton">🚨 Report New Tracker</button>
+  <button class="evidence-button" id="diagnosticsButton">📊 Show Diagnostics</button>
+  <button class="evidence-button" id="exportButton">💾 Export Logs (JSON)</button>
+
+  <div id="diagnosticsPanel" style="display: none; margin-top: 12px; padding: 12px; background: #2a2a2a; border-radius: 8px; border: 1px solid #3a3a3a;">
+    <div style="font-size: 13px; color: #00ff00; margin-bottom: 8px; font-weight: 600;">
+      🔬 Real-Time Diagnostics
+    </div>
+    <div style="font-size: 11px; color: #aaa; margin-bottom: 8px;">
+      Last 15 minutes:
+    </div>
+    <div style="font-size: 11px; color: #ccc; line-height: 1.6;">
+      <div>• Headers stripped (x-client-data): <span id="diagHeadersStripped">0</span></div>
+      <div>• Client Hints blocked (sec-ch-ua-*): <span id="diagClientHints">0</span></div>
+      <div>• Analytics cookies deleted: <span id="diagCookiesDeleted">0</span></div>
+      <div>• Surveillance endpoints blocked: <span id="diagEndpointsBlocked">0</span></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Based on documented surveillance by Anthropic, OpenAI, and others.<br>
+    Built by Curtis Kingsley & Contributors 💙
+  </div>
+
+  <script src="popup_free.js"></script>
+</body>
+</html>

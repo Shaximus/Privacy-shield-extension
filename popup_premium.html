@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>AI Privacy Shield - Premium</title>
+    <style>
+        body {
+            width: 350px;
+            padding: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 15px 0;
+            background: linear-gradient(135deg, #00d4ff 0%, #9945FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shield-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .stats-container {
+            background: rgba(124, 58, 237, 0.08);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(124, 58, 237, 0.25);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #a0a0a0;
+            font-size: 13px;
+        }
+
+        .stat-value {
+            color: #00d4ff;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .total-blocked {
+            font-size: 36px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #00d4ff 0%, #9945FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .blocked-label {
+            text-align: center;
+            color: #a0a0a0;
+            font-size: 12px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .domain-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .domain-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .domain-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .domain-list::-webkit-scrollbar-thumb {
+            background: rgba(153, 69, 255, 0.4);
+            border-radius: 3px;
+        }
+
+        .domain-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .domain-name {
+            color: #c0c0c0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 220px;
+        }
+
+        .domain-count {
+            color: #14F195;
+            font-weight: bold;
+            margin-left: 15px;
+            margin-right: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s;
+        }
+
+        .reset-button {
+            background: linear-gradient(135deg, #9945FF 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .reset-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .evidence-button {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .evidence-button:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: rgba(0, 212, 255, 0.5);
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(20, 241, 149, 0.1);
+            color: #14F195;
+            border: 1px solid rgba(20, 241, 149, 0.3);
+        }
+
+        .status-inactive {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+            color: #ff6b6b;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .footer a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(153, 69, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-family: monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-sizing: border-box;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        input[type="text"]::placeholder {
+            color: #666;
+        }
+
+        .activate-btn {
+            background: linear-gradient(90deg, #9945FF, #14F195);
+            color: white;
+            font-size: 14px;
+            padding: 12px;
+            border: none;
+            font-weight: 700;
+        }
+
+        .activate-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(153, 69, 255, 0.3);
+        }
+
+        .tier-premium {
+            background: linear-gradient(135deg, rgba(20, 241, 149, 0.1) 0%, rgba(0, 212, 255, 0.1) 100%);
+            border: 1px solid rgba(20, 241, 149, 0.25);
+        }
+
+        .link-row {
+            text-align: center;
+            margin: 12px 0;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .link-row a {
+            color: #00d4ff;
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+
+        .link-row a:hover {
+            color: #14F195;
+        }
+
+        .link-row span {
+            color: rgba(255, 255, 255, 0.2);
+            margin: 0 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>
+        <img src="animated-icons/frame_060.png" class="shield-icon" alt="AI Privacy Shield" />
+        AI Privacy Shield
+    </h1>
+
+    <div class="status status-active" id="statusActive" style="display: none;">
+        ACTIVE - Full Protection Enabled
+    </div>
+
+    <div class="status status-inactive" id="statusInactive" style="display: block;">
+        LICENSE REQUIRED
+    </div>
+
+    <!-- License Input Section -->
+    <div id="licenseSection" class="stats-container" style="display: block;">
+        <div style="text-align: center; margin-bottom: 12px;">
+            <div style="font-size: 13px; color: #ff6b6b; margin-bottom: 8px;">Enter your license key to activate protection</div>
+        </div>
+        <input type="text" id="licenseInput" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
+        <button id="activateBtn" class="activate-btn" style="margin-top: 10px;">
+            Activate License
+        </button>
+        <div id="licenseError" style="color: #ff6b6b; font-size: 12px; text-align: center; margin-top: 8px; display: none;"></div>
+        <div style="text-align: center; margin-top: 12px;">
+            <a href="https://reflexionsoftware.com/#pricing" target="_blank" style="color: #00d4ff; font-size: 12px; text-decoration: none;">
+                Don't have a license? Get one here
+            </a>
+        </div>
+    </div>
+
+    <div class="total-blocked" id="totalBlocked">0</div>
+    <div class="blocked-label">Surveillance Requests Blocked</div>
+
+    <div class="stats-container tier-premium" id="tierStatus">
+        <div style="text-align: center; margin-bottom: 8px;">
+            <div style="font-size: 11px; color: #a0a0a0; text-transform: uppercase; letter-spacing: 0.5px;">Protection Level</div>
+            <div style="font-size: 16px; font-weight: 700; color: #14F195; margin: 4px 0;" id="trialStatus">PREMIUM</div>
+            <div style="font-size: 13px; color: #c0c0c0;"><span id="daysRemaining">Full protection</span> <strong style="color: #00d4ff;">37+ trackers blocked</strong></div>
+        </div>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-row">
+            <span class="stat-label">Protected Since</span>
+            <span class="stat-value" id="protectedSince">---</span>
+        </div>
+    </div>
+
+    <div class="stats-container">
+        <div style="font-size: 13px; color: #a0a0a0; margin-bottom: 8px; font-weight: 600;">
+            Blocked by Surveillance Company:
+        </div>
+        <div class="domain-list" id="domainList">
+            <div style="text-align: center; color: #666; padding: 20px; font-size: 12px;">
+                No surveillance blocked yet
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-row">
+            <span class="stat-label" id="strictLabel">Strict Google Mode: OFF</span>
+            <span class="stat-value">
+                <input type="checkbox" id="strictToggle" style="width: 18px; height: 18px; cursor: pointer; accent-color: #9945FF;" />
+            </span>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 6px;">
+            Blocks Google analytics cookies (_gcl_*, _ga*, NID). May sign you out or disable some account features.
+        </div>
+    </div>
+
+    <button class="reset-button" id="resetButton">Reset Statistics</button>
+    <button class="evidence-button" id="evidenceButton">View Evidence</button>
+    <button class="evidence-button" id="pauseSiteButton">Pause on This Site (10 min)</button>
+    <button class="evidence-button" id="reportTrackerButton">Report New Tracker</button>
+    <button class="evidence-button" id="diagnosticsButton">Show Diagnostics</button>
+    <button class="evidence-button" id="exportButton">Export Logs (JSON)</button>
+
+    <div id="diagnosticsPanel"
+        style="display: none; margin-top: 12px; padding: 12px; background: rgba(124, 58, 237, 0.08); border-radius: 10px; border: 1px solid rgba(124, 58, 237, 0.25);">
+        <div style="font-size: 13px; color: #14F195; margin-bottom: 8px; font-weight: 600;">
+            Real-Time Diagnostics
+        </div>
+        <div style="font-size: 11px; color: #a0a0a0; margin-bottom: 8px;">
+            Last 15 minutes:
+        </div>
+        <div style="font-size: 11px; color: #c0c0c0; line-height: 1.6;">
+            <div>Headers stripped (x-client-data): <span id="diagHeadersStripped" style="color: #00d4ff;">0</span></div>
+            <div>Client Hints blocked (sec-ch-ua-*): <span id="diagClientHints" style="color: #00d4ff;">0</span></div>
+            <div>Analytics cookies deleted: <span id="diagCookiesDeleted" style="color: #00d4ff;">0</span></div>
+            <div>Surveillance endpoints blocked: <span id="diagEndpointsBlocked" style="color: #00d4ff;">0</span></div>
+        </div>
+    </div>
+
+    <div class="link-row">
+        <a href="https://reflexionsoftware.com/manage.html" target="_blank">Manage Subscription</a>
+        <span>|</span>
+        <a href="https://reflexionsoftware.com/download.html" target="_blank">Re-download</a>
+    </div>
+
+    <div class="footer">
+        Thank you for supporting AI Privacy Shield!<br>
+        Built by <a href="https://reflexionsoftware.com" target="_blank">Reflexion Software</a>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

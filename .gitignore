@@ -1,0 +1,17 @@
+# Chrome extension runtime metadata
+_metadata/
+
+# Backup files
+*.backup
+*.bak
+
+# Development files
+*.log
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Deployment files
+deploy
