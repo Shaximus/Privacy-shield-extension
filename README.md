@@ -2,7 +2,7 @@
 
 **Block AI surveillance while keeping AI platforms functional.**
 
-A browser extension that surgically blocks keystroke logging, session recording, and telemetry from AI platforms (Anthropic Claude, OpenAI ChatGPT, Google Gemini, xAI Grok, etc.) while keeping the platforms themselves fully operational.
+A browser extension that blocks 133+ surveillance trackers across AI platforms (Anthropic Claude, OpenAI ChatGPT, Google Gemini, xAI Grok, Kimi, Meta AI) and detects model substitution fraud. Keeps platforms fully functional while stopping keystroke logging, session recording, and telemetry.
 
 ---
 
@@ -89,7 +89,10 @@ AI Privacy Shield blocks surveillance **without breaking the platforms**.
 - **Zero configuration** - Works immediately after installation
 - **Lightweight** - Uses Chrome's native declarativeNetRequest API (no performance impact)
 - **Evidence-based** - Built from documented network analysis with SHA256-verified HAR captures
-- **Weekly updates** - New platforms and damning evidence added every week
+- **Model swap detection** - Verifies you receive the AI model you pay for (detects bait-and-switch)
+- **Google header scrubbing** - Strips 11 tracking headers from Google/googleapis requests
+- **Per-site pause** - Temporarily disable blocking on specific sites
+- **Weekly updates** - New platforms and evidence added every week
 - **Animated protection** - Pulsing icon shows active blocking in real-time
 
 ---
@@ -248,31 +251,25 @@ Found a surveillance endpoint that isn't being blocked?
 
 **Proprietary Software** - All rights reserved.
 
-### Individual Pricing
+### Pricing
 
-**📅 Monthly: $0.99/month**
+**Monthly: $9.99/month**
 - Cancel anytime
-- Try risk-free
-- Same features as other tiers
-- Billed monthly
+- Full protection
+- 30-day money-back guarantee
 
-**⭐ Annual: $9.99/year** (BEST VALUE - Save 17%)
-- Less than $1/month
-- Same as 10 months of monthly pricing
+**Annual: $99/year** (Save 17%)
 - All features unlocked
-- Billed yearly
+- 30-day money-back guarantee
 
-**💎 Lifetime: $24.99** (one-time payment)
+**Lifetime: $249** (one-time payment)
 - Pay once, protected forever
-- Never pay again
-- All features unlocked
 - All future updates included
+- Limited slots available
 
 ### Enterprise Licensing
 
 Custom pricing available for organizations. Contact for volume licensing and deployment options.
-
-Built to protect user privacy in the age of AI surveillance.
 
 ---
 

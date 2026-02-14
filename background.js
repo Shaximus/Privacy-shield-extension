@@ -1,34 +1,22 @@
-// Cross-browser compatibility
-const browserAPI = typeof browser !== "undefined" ? browser : chrome;
+/**
+ * AIShield Background Service Worker v2.3.0
+ *
+ * Security Hardened:
+ * - HMAC request signing
+ * - GHOSTPULSE Malware Detection
+ * - Strict Origin Validation
+ * - Rule Signature Verification
+ * 
+ * Bug Fixes:
+ * - WAA ID Collision
+ * - Pause Persistence
+ * - Strict Mode Implementation
+ * - Diagnostics Counters
+ */
 
-// AI Privacy Shield - Background Service Worker
-// Rules are fetched from server - extension is useless without valid license
+const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
 
-// === CONFIGURATION ===
-const RULES_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/rules';
-const LICENSE_ENDPOINT = 'https://ai-shield-license.kingsley-w-m-curtis.workers.dev/verify-license';
-const STATS_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/report-stats';
-const RULES_REFRESH_INTERVAL = 60 * 60 * 1000; // Refresh rules every hour
-const REPORT_INTERVAL = 5 * 60 * 1000; // Report stats every 5 minutes
-
-// === STATE ===
-let stats = {
-  totalBlocked: 0,
-  blockedByDomain: {},
-  lastReset: Date.now()
-};
-
-let licenseStatus = {
-  valid: false,
-  type: null,
-  checkedAt: null
-};
-
-let rulesLoaded = false;
-let extensionId = null;
-let lastReportedStats = { totalBlocked: 0 };
-
-// === ANIMATED ICON ===
+// === Animated Icon (pulse on block) - Full 145 frame animation ===
 const iconFrames = [];
 for (let i = 0; i < 145; i++) {
   const frameNum = String(i).padStart(3, '0');
@@ -52,335 +40,620 @@ function pulseIcon() {
       clearInterval(pulseInterval);
       browserAPI.action.setIcon({ path: 'animated-icons/frame_000.png' });
     }
-  }, 41.67);
+  }, 41.67); // 24fps
 }
 
-// === LICENSE VERIFICATION ===
-async function verifyLicense() {
-  const result = await browserAPI.storage.local.get(['licenseKey']);
-  const licenseKey = result.licenseKey;
+// Build-time secret (Replaced by build.sh)
+const CLIENT_SECRET = 'REPLACE_AT_BUILD_TIME';
 
-  if (!licenseKey) {
-    console.log('[AI Privacy Shield] No license key found');
-    licenseStatus = { valid: false, type: null, checkedAt: Date.now() };
-    await clearAllRules();
-    return false;
-  }
+// === ENDPOINTS (Updated for v2.3.0 Worker) ===
+const LICENSE_ENDPOINT = 'https://ai-shield-license.kingsley-w-m-curtis.workers.dev/license/verify';
+const STATS_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/stats/report';
+const RULES_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/rules/fetch';
 
-  try {
-    const response = await fetch(LICENSE_ENDPOINT, {
-      headers: { 'X-License-Key': licenseKey }
-    });
-    const data = await response.json();
-
-    if (data.valid) {
-      console.log('[AI Privacy Shield] License valid:', data.type);
-      licenseStatus = { valid: true, type: data.type, checkedAt: Date.now() };
-      return true;
-    } else {
-      console.warn('[AI Privacy Shield] License invalid:', data.error);
-      licenseStatus = { valid: false, type: null, checkedAt: Date.now(), error: data.error };
-      await clearAllRules();
-      return false;
-    }
-  } catch (error) {
-    console.error('[AI Privacy Shield] License check failed:', error);
-    // On network error, use cached status if recent
-    if (licenseStatus.checkedAt && Date.now() - licenseStatus.checkedAt < 24 * 60 * 60 * 1000) {
-      return licenseStatus.valid;
-    }
-    return false;
-  }
-}
-
-// === DYNAMIC RULES MANAGEMENT ===
-async function clearAllRules() {
-  try {
-    const existingRules = await browserAPI.declarativeNetRequest.getDynamicRules();
-    const ruleIds = existingRules.map(r => r.id);
-    if (ruleIds.length > 0) {
-      await browserAPI.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: ruleIds
-      });
-      console.log('[AI Privacy Shield] Cleared', ruleIds.length, 'rules');
-    }
-    rulesLoaded = false;
-  } catch (error) {
-    console.error('[AI Privacy Shield] Error clearing rules:', error);
-  }
-}
-
-async function fetchAndApplyRules() {
-  const result = await browserAPI.storage.local.get(['licenseKey']);
-  const licenseKey = result.licenseKey;
-
-  if (!licenseKey) {
-    console.log('[AI Privacy Shield] No license - cannot fetch rules');
-    return false;
-  }
-
-  try {
-    const response = await fetch(RULES_ENDPOINT, {
-      headers: { 'X-License-Key': licenseKey }
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('[AI Privacy Shield] Rules fetch failed:', error);
-      return false;
-    }
-
-    const data = await response.json();
-    const rules = data.rules || [];
-
-    if (rules.length === 0) {
-      console.warn('[AI Privacy Shield] No rules returned from server');
-      return false;
-    }
-
-    // Clear existing dynamic rules first
-    await clearAllRules();
-
-    // Convert server rules to declarativeNetRequest format
-    const dnrRules = rules.map((rule, index) => ({
-      id: rule.id || (index + 1),
-      priority: rule.priority || 1,
-      action: rule.action,
-      condition: rule.condition
-    }));
-
-    // Apply new rules
-    await browserAPI.declarativeNetRequest.updateDynamicRules({
-      addRules: dnrRules
-    });
-
-    rulesLoaded = true;
-    console.log('[AI Privacy Shield] Loaded', dnrRules.length, 'protection rules from server');
-
-    // Store rules version for tracking
-    await browserAPI.storage.local.set({
-      rulesVersion: data.version,
-      rulesLastUpdated: Date.now(),
-      rulesCount: dnrRules.length
-    });
-
-    return true;
-  } catch (error) {
-    console.error('[AI Privacy Shield] Error fetching rules:', error);
-    return false;
-  }
-}
-
-// === RULE ID TO NAME MAPPING (for stats) ===
-const ruleIdToName = {
-  1: 'Statsig', 2: 'Honeycomb', 3: 'Segment', 4: 'Segment',
-  5: 'Cloudflare RUM', 6: 'Cloudflare RUM', 7: 'Amplitude',
-  8: 'Mixpanel', 9: 'PostHog', 10: 'Intercom',
-  11: 'Google Analytics', 12: 'Google Tag Manager', 13: 'DoubleClick',
-  14: 'Google Ads', 15: 'Statsig (Embedded)', 16: 'Honeycomb Traces',
-  17: 'Grok Telemetry', 18: 'Statsig CDN', 19: 'Statsig Assets',
-  20: 'Statsig Config', 21: 'Statsig Registry', 22: 'Cloudflare NEL',
-  23: 'Datadog RUM (OpenAI)', 24: 'ChatGPT Telemetry', 25: 'ChatGPT Stats',
-  26: 'ChatGPT A/B Testing', 27: 'Google CSP Reporting', 28: 'Meta AI Telemetry',
-  29: 'Meta AI Event Relay', 30: 'Meta Error Reporting', 31: 'Facebook Pixel',
-  32: 'Facebook Browser Reporting', 33: 'Google Play Telemetry',
-  35: 'Google Ads AsyncData', 36: 'Google Web Activity API',
-  37: 'ByteDance Gator (DeepSeek)'
-};
-
-// === STATS TRACKING ===
-browserAPI.storage.local.get(['stats'], (result) => {
-  if (result.stats) stats = result.stats;
-});
-
-try {
-  if (browserAPI.declarativeNetRequest?.onRuleMatchedDebug) {
-    browserAPI.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
-      const ruleId = info.rule.ruleId;
-      const name = ruleIdToName[ruleId] || `Rule ${ruleId}`;
-
-      stats.totalBlocked++;
-      if (!stats.blockedByDomain[name]) stats.blockedByDomain[name] = 0;
-      stats.blockedByDomain[name]++;
-
-      browserAPI.storage.local.set({ stats });
-      pulseIcon();
-      console.log('[AI Privacy Shield] Blocked:', name, info.request.url);
-    });
-  }
-} catch (error) {
-  console.warn('[AI Privacy Shield] Stats tracking setup error:', error);
-}
-
-// === DIAGNOSTICS ===
-let diagnostics = {
-  headersStripped: 0, clientHintsBlocked: 0,
-  cookiesDeleted: 0, endpointsBlocked: 0,
-  lastReset: Date.now()
-};
-
-browserAPI.storage.local.get(['diagnostics'], (res) => {
-  if (res.diagnostics) diagnostics = res.diagnostics;
-});
-
-// === MESSAGE HANDLING ===
-browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'getStats') {
-    sendResponse(stats);
-  } else if (message.action === 'resetStats') {
-    stats = { totalBlocked: 0, blockedByDomain: {}, lastReset: Date.now() };
-    browserAPI.storage.local.set({ stats });
-    sendResponse({ success: true });
-  } else if (message.action === 'getLicenseStatus') {
-    sendResponse(licenseStatus);
-  } else if (message.action === 'setLicenseKey') {
-    browserAPI.storage.local.set({ licenseKey: message.licenseKey }, async () => {
-      const valid = await verifyLicense();
-      if (valid) {
-        await fetchAndApplyRules();
-      }
-      sendResponse({ success: valid, licenseStatus });
-    });
-    return true; // async response
-  } else if (message.action === 'refreshRules') {
-    fetchAndApplyRules().then(success => sendResponse({ success }));
-    return true;
-  } else if (message.action === 'getDiagnostics') {
-    sendResponse(diagnostics);
-  } else if (message.action === 'getRulesStatus') {
-    browserAPI.storage.local.get(['rulesVersion', 'rulesLastUpdated', 'rulesCount'], (result) => {
-      sendResponse({
-        loaded: rulesLoaded,
-        version: result.rulesVersion,
-        lastUpdated: result.rulesLastUpdated,
-        count: result.rulesCount
-      });
-    });
-    return true;
-  }
-  return true;
-});
-
-// === STRICT MODE (Google cookies) ===
-let strictMode = false;
-const cookieTargets = [
-  { name: /^_gcl_/, domains: [/\.google\./, /\.doubleclick\.net/, /\.googlesyndication\.com/] },
-  { name: /^_ga(_.*)?$/, domains: [/\.google\./, /\.googleapis\.com/, /\.doubleclick\.net/] },
-  { name: /^NID$/, domains: [/\.google\./] }
+// Security: Exact origin whitelist
+const ALLOWED_ORIGINS = [
+  'https://reflexionsoftware.com',
+  'https://www.reflexionsoftware.com',
+  'https://reflexionsoftware.pages.dev'
 ];
 
-browserAPI.storage.local.get(['strictMode'], (res) => {
-  if (typeof res.strictMode === 'boolean') strictMode = res.strictMode;
-});
+// License key format: XXXXX-XXXXX-XXXXX-XXXXX
+const LICENSE_KEY_REGEX = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/;
 
-function cookieMatchesTargets(cookie) {
-  return cookieTargets.some(t => t.name.test(cookie.name) && t.domains.some(d => d.test(cookie.domain)));
+// Rate limiting
+const VERIFY_COOLDOWN = 5000;
+const STATS_INTERVAL = 300000;
+
+// State
+let lastVerifyAttempt = 0;
+let lastStatsReport = 0;
+let extensionId = null;
+
+// === HMAC SECURITY ===
+async function generateHMAC(message, secret) {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const messageData = encoder.encode(message);
+
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign']
+  );
+
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
-function cookieUrl(cookie) {
-  const proto = cookie.secure ? 'https://' : 'http://';
-  const host = cookie.domain.startsWith('.') ? cookie.domain.slice(1) : cookie.domain;
-  return proto + host + (cookie.path || '/');
+// === MALWARE DETECTION (GHOSTPULSE) ===
+const MALWARE_LOG_KEY = 'malware_block_log';
+const MALWARE_LOG_MAX = 1000;
+const GHOSTPULSE_PATTERNS = [
+  /cdn\.discordapp\.com\/attachments\/265218620949266432/i,
+  /cdn\.discordapp\.com.*\.avif.*\?.*key=/i
+];
+
+async function logMalwareBlock(details) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    url: details.url,
+    tabId: details.tabId,
+    type: details.type,
+    ruleId: details.ruleId || 9001,
+    malwareFamily: 'GHOSTPULSE',
+    severity: 'critical'
+  };
+
+  const result = await browserAPI.storage.local.get(MALWARE_LOG_KEY);
+  const logs = result[MALWARE_LOG_KEY] || [];
+  logs.unshift(entry);
+  if (logs.length > MALWARE_LOG_MAX) logs.length = MALWARE_LOG_MAX;
+  await browserAPI.storage.local.set({ [MALWARE_LOG_KEY]: logs });
+
+  // Desktop notification
+  try {
+    if (browserAPI.notifications) {
+      await browserAPI.notifications.create(`ghostpulse-${Date.now()}`, {
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: 'Malware Blocked: GHOSTPULSE',
+        message: 'AIShield blocked a connection to a known GHOSTPULSE C2 server.',
+        priority: 2,
+        requireInteraction: true
+      });
+    }
+    browserAPI.action.setBadgeText({ text: '!' });
+    browserAPI.action.setBadgeBackgroundColor({ color: '#FF0000' });
+    setTimeout(() => browserAPI.action.setBadgeText({ text: '' }), 10000);
+  } catch (e) {
+    console.error('[AIShield] Notification failed:', e);
+  }
+
+  return entry;
 }
 
-browserAPI.cookies.onChanged.addListener((changeInfo) => {
-  if (!strictMode || !changeInfo?.cookie) return;
-  const c = changeInfo.cookie;
-  if (cookieMatchesTargets(c)) {
-    browserAPI.cookies.remove({ url: cookieUrl(c), name: c.name, storeId: c.storeId });
-    diagnostics.cookiesDeleted++;
-    browserAPI.storage.local.set({ diagnostics });
+// === SMART WAA DETECTION ===
+// FIX: Moved ID to safe range (Bug 1)
+const WAA_RULE_ID = 100000; 
+const WAA_KEY_PATTERNS = [
+  /^https:\/\/aistudio\.google\.com\/(app\/)?apikey/,
+  /^https:\/\/makersuite\.google\.com\/(app\/)?apikey/,
+  /^https:\/\/ai\.google\.dev\/(app\/)?apikey/
+];
+let waaActiveTabs = new Set();
+
+async function updateWaaRule() {
+  try {
+    await browserAPI.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [WAA_RULE_ID] });
+  } catch (e) { /* ok */ }
+  if (waaActiveTabs.size === 0) return;
+  await browserAPI.declarativeNetRequest.updateDynamicRules({
+    addRules: [{
+      id: WAA_RULE_ID,
+      priority: 10,
+      action: { type: 'allow' },
+      condition: {
+        urlFilter: '*waa-pa.clients6.google.com*',
+        tabIds: [...waaActiveTabs],
+        resourceTypes: ['xmlhttprequest', 'other', 'ping']
+      }
+    }]
+  });
+}
+
+function isKeyCreationPage(url) {
+  return WAA_KEY_PATTERNS.some(p => p.test(url));
+}
+
+async function scanExistingTabsForKeyPages() {
+  try {
+    const tabs = await browserAPI.tabs.query({});
+    for (const tab of tabs) {
+      if (tab.url && isKeyCreationPage(tab.url)) {
+        waaActiveTabs.add(tab.id);
+      }
+    }
+    if (waaActiveTabs.size > 0) updateWaaRule();
+  } catch (e) { /* ok */ }
+}
+
+browserAPI.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (!changeInfo.url) return;
+  const wasActive = waaActiveTabs.has(tabId);
+  const isActive = isKeyCreationPage(changeInfo.url);
+  if (isActive && !wasActive) {
+    waaActiveTabs.add(tabId);
+    updateWaaRule();
+  } else if (!isActive && wasActive) {
+    waaActiveTabs.delete(tabId);
+    updateWaaRule();
   }
 });
 
-// === STATS REPORTING ===
+browserAPI.tabs.onRemoved.addListener((tabId) => {
+  if (waaActiveTabs.delete(tabId)) updateWaaRule();
+});
+
+// === EXTENSION ID ===
+function generateExtensionId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return 'ext_' + crypto.randomUUID().replace(/-/g, '');
+  }
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return 'ext_' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 async function getExtensionId() {
   if (extensionId) return extensionId;
-  const result = await browserAPI.storage.local.get(['extensionId']);
+  const result = await browserAPI.storage.local.get('extensionId');
   if (result.extensionId) {
     extensionId = result.extensionId;
   } else {
-    extensionId = 'ext_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    extensionId = generateExtensionId();
     await browserAPI.storage.local.set({ extensionId });
   }
   return extensionId;
 }
 
-async function reportStats() {
+// === LICENSE VERIFICATION (HMAC) ===
+function validateLicenseKeyFormat(key) {
+  return LICENSE_KEY_REGEX.test(key);
+}
+
+async function verifyLicense(licenseKey) {
+  const now = Date.now();
+  if (now - lastVerifyAttempt < VERIFY_COOLDOWN) {
+    return {
+      error: true,
+      message: `Please wait ${Math.ceil((VERIFY_COOLDOWN - (now - lastVerifyAttempt)) / 1000)} seconds`
+    };
+  }
+  lastVerifyAttempt = now;
+
+  if (!validateLicenseKeyFormat(licenseKey)) {
+    return { error: true, message: 'Invalid license key format.' };
+  }
+
   try {
-    const id = await getExtensionId();
-    const deltaBlocks = stats.totalBlocked - lastReportedStats.totalBlocked;
-    if (deltaBlocks <= 0) return;
+    const extId = await getOrCreateExtensionId();
+    const timestamp = Date.now().toString();
+    const signaturePayload = `${licenseKey}:${extId}:${timestamp}`;
+    const signature = await generateHMAC(signaturePayload, CLIENT_SECRET);
 
-    const deltaByDomain = {};
-    for (const [tracker, count] of Object.entries(stats.blockedByDomain)) {
-      const lastCount = lastReportedStats.blockedByDomain?.[tracker] || 0;
-      const delta = count - lastCount;
-      if (delta > 0) deltaByDomain[tracker] = delta;
-    }
-
-    const response = await fetch(STATS_ENDPOINT, {
+    const response = await fetch(LICENSE_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-License-Key': licenseKey,
+        'X-Extension-Id': extId,
+        'X-Timestamp': timestamp,
+        'X-Signature': signature
+      },
       body: JSON.stringify({
-        extensionId: id,
-        stats: { totalBlocked: deltaBlocks, blockedByDomain: deltaByDomain },
-        platform: navigator.userAgent.includes('Firefox') ? 'firefox' : 'chrome'
+        extensionId: extId,
+        timestamp: timestamp,
+        platform: 'chrome',
+        version: '2.3.0'
       })
     });
 
-    if (response.ok) {
-      lastReportedStats = JSON.parse(JSON.stringify(stats));
-      console.log('[AI Privacy Shield] Stats reported:', deltaBlocks, 'blocks');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.valid || data.active) {
+      await browserAPI.storage.local.set({
+        licenseKey: licenseKey,
+        licenseType: data.type || 'premium',
+        licenseExpires: data.expires || null,
+        licenseVerified: Date.now()
+      });
+      await fetchPremiumRules(licenseKey, extId);
+      return { success: true, type: data.type };
+    } else {
+      return { error: true, message: data.message || 'Invalid license key' };
     }
   } catch (error) {
-    console.warn('[AI Privacy Shield] Stats report error:', error.message);
+    console.error('[AIShield] License verification failed:', error.message);
+    return { error: true, message: 'Network error. Please try again.' };
   }
 }
 
-// === INITIALIZATION ===
-async function initialize() {
-  console.log('[AI Privacy Shield] Initializing...');
+// === PREMIUM RULES (HMAC + Signature Check) ===
+async function fetchPremiumRules(licenseKey, extId) {
+  try {
+    if (!extId) extId = await getExtensionId();
+    const timestamp = Date.now().toString();
+    const signature = await generateHMAC(
+      `${licenseKey}:${extId}:${timestamp}`, CLIENT_SECRET
+    );
 
-  // Get extension ID
-  await getExtensionId();
+    const response = await fetch(RULES_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-License-Key': licenseKey,
+        'X-Extension-Id': extId,
+        'X-Timestamp': timestamp,
+        'X-Signature': signature
+      },
+      body: JSON.stringify({ platform: 'chrome', version: '2.3.0' })
+    });
 
-  // Load last reported stats
-  const result = await browserAPI.storage.local.get(['lastReportedStats']);
-  if (result.lastReportedStats) lastReportedStats = result.lastReportedStats;
+    if (!response.ok) return;
+    const data = await response.json();
 
-  // Verify license and load rules
-  const hasValidLicense = await verifyLicense();
-  if (hasValidLicense) {
-    await fetchAndApplyRules();
-  } else {
-    console.log('[AI Privacy Shield] No valid license - protection disabled');
-    // Set badge to indicate unlicensed
-    browserAPI.action.setBadgeText({ text: '!' });
-    browserAPI.action.setBadgeBackgroundColor({ color: '#ef4444' });
-  }
-
-  // Periodic license check and rules refresh (every hour)
-  setInterval(async () => {
-    const valid = await verifyLicense();
-    if (valid && !rulesLoaded) {
-      await fetchAndApplyRules();
-    } else if (!valid) {
-      await clearAllRules();
+    // Integrity check
+    if (data.rules && data.signature) {
+      const expectedSig = await generateHMAC(
+        JSON.stringify(data.rules), CLIENT_SECRET
+      );
+      if (data.signature !== expectedSig) {
+        console.error('[AIShield] Rule signature mismatch — rules rejected');
+        return;
+      }
     }
-  }, RULES_REFRESH_INTERVAL);
 
-  // Stats reporting (every 5 minutes)
-  setInterval(async () => {
-    await reportStats();
-    browserAPI.storage.local.set({ lastReportedStats });
-  }, REPORT_INTERVAL);
+    if (data.rules && data.rules.length > 0) {
+      // Preserve WAA and Malware rules
+      const existingRules = await browserAPI.declarativeNetRequest.getDynamicRules();
+      const protectedIds = [WAA_RULE_ID, 9001]; 
+      const toRemove = existingRules
+        .map(r => r.id)
+        .filter(id => !protectedIds.includes(id));
 
-  // Initial stats report after 30 seconds
-  setTimeout(reportStats, 30000);
-
-  console.log('[AI Privacy Shield] Initialization complete');
+      await browserAPI.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: toRemove,
+        addRules: data.rules
+      });
+    }
+  } catch (error) {
+    console.error('[AIShield] Premium rules fetch failed:', error.message);
+  }
 }
 
-// Start initialization
-initialize();
+// === STATS ===
+async function getStats() {
+  const result = await browserAPI.storage.local.get(['stats']);
+  return result.stats || {
+    totalBlocked: 0,
+    blockedByDomain: {},
+    lastReset: Date.now()
+  };
+}
+
+async function resetStats() {
+  const fresh = {
+    totalBlocked: 0,
+    blockedByDomain: {},
+    lastReset: Date.now()
+  };
+  await browserAPI.storage.local.set({ stats: fresh });
+  return fresh;
+}
+
+async function getDiagnostics() {
+  const result = await browserAPI.storage.local.get(['diagnostics']);
+  return result.diagnostics || {
+    headersStripped: 0,
+    clientHintsBlocked: 0,
+    cookiesDeleted: 0,
+    endpointsBlocked: 0
+  };
+}
+
+async function reportStats(stats) {
+  const now = Date.now();
+  if (now - lastStatsReport < STATS_INTERVAL) return;
+  lastStatsReport = now;
+
+  try {
+    const extId = await getExtensionId();
+    const timestamp = Date.now().toString();
+    const payload = JSON.stringify({
+      extensionId: extId,
+      stats: stats,
+      platform: 'chrome',
+      timestamp: timestamp
+    });
+
+    const signature = await generateHMAC(payload, CLIENT_SECRET);
+
+    await fetch(STATS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Signature': signature,
+        'X-Timestamp': timestamp
+      },
+      body: payload
+    });
+  } catch (e) {
+    // Non-critical
+  }
+}
+
+// === SITE PAUSE (Bug 4: Persistence) ===
+async function pauseSite(domain, duration) {
+  const until = Date.now() + duration;
+  const result = await browserAPI.storage.local.get(['pausedSites']);
+  const paused = result.pausedSites || {};
+  paused[domain] = until;
+  await browserAPI.storage.local.set({ pausedSites: paused });
+  
+  // Cleanup
+  setTimeout(async () => {
+    const fresh = await browserAPI.storage.local.get(['pausedSites']);
+    const freshPaused = fresh.pausedSites || {};
+    if (freshPaused[domain] <= Date.now()) {
+      delete freshPaused[domain];
+      await browserAPI.storage.local.set({ pausedSites: freshPaused });
+    }
+  }, duration);
+
+  return { success: true, domain, until };
+}
+
+async function unpauseSite(domain) {
+  const result = await browserAPI.storage.local.get(['pausedSites']);
+  const paused = result.pausedSites || {};
+  delete paused[domain];
+  await browserAPI.storage.local.set({ pausedSites: paused });
+  return { success: true, domain };
+}
+
+async function getPauseStatus(domain) {
+  const result = await browserAPI.storage.local.get(['pausedSites']);
+  const paused = result.pausedSites || {};
+  
+  if (!paused[domain]) return { paused: false };
+  
+  if (Date.now() > paused[domain]) {
+    delete paused[domain];
+    await browserAPI.storage.local.set({ pausedSites: paused });
+    return { paused: false };
+  }
+  return { paused: true, until: paused[domain], remaining: paused[domain] - Date.now() };
+}
+
+// === STRICT MODE (Bug 5: Implementation) ===
+async function setStrictMode(enabled) {
+  await browserAPI.storage.local.set({ strictMode: enabled });
+
+  if (enabled && browserAPI.cookies) {
+    // Delete known tracking cookies
+    const trackingPrefixes = ['_ga', '_gid', '_gcl', '_fbp', '_fbc', 'NID', 'APISID', 'SAPISID'];
+    try {
+      const cookies = await browserAPI.cookies.getAll({});
+      for (const cookie of cookies) {
+        if (trackingPrefixes.some(p => cookie.name.startsWith(p))) {
+          const protocol = cookie.secure ? 'https' : 'http';
+          const url = `${protocol}://${cookie.domain.replace(/^\./, '')}${cookie.path}`;
+          await browserAPI.cookies.remove({ url, name: cookie.name });
+        }
+      }
+    } catch (e) { console.error('[AIShield] Cookie cleanup error:', e); }
+  }
+
+  return { success: true, strictMode: enabled };
+}
+
+// === EXTERNAL MESSAGE HANDLER (Strict Origin) ===
+browserAPI.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
+  const senderOrigin = sender.origin || (sender.url ? new URL(sender.url).origin : '');
+
+  if (!ALLOWED_ORIGINS.includes(senderOrigin)) {
+    console.warn('[AIShield] Blocked external message from:', senderOrigin);
+    sendResponse({ success: false, error: 'Unauthorized' });
+    return false;
+  }
+
+  if (request.action === 'activateLicense') {
+    verifyLicense(request.licenseKey).then(sendResponse);
+    return true;
+  }
+
+  if (request.action === 'checkStatus') {
+    browserAPI.storage.local.get(['licenseKey', 'licenseType']).then(data => {
+      sendResponse({
+        valid: !!data.licenseKey,
+        licensed: !!data.licenseKey,
+        type: data.licenseType || 'none'
+      });
+    });
+    return true;
+  }
+
+  sendResponse({ success: false, error: 'Unknown action' });
+  return false;
+});
+
+// === INTERNAL MESSAGE HANDLER ===
+browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  switch (request.action) {
+    case 'setLicenseKey':
+    case 'verifyLicense':
+      verifyLicense(request.licenseKey).then(sendResponse);
+      return true;
+
+    case 'getLicenseStatus':
+      browserAPI.storage.local.get(['licenseKey', 'licenseType', 'licenseVerified'])
+        .then(data => {
+          sendResponse({
+            valid: !!data.licenseKey,
+            licensed: !!data.licenseKey,
+            type: data.licenseType || 'none',
+            verified: data.licenseVerified || null
+          });
+        });
+      return true;
+
+    case 'deactivateLicense':
+      browserAPI.storage.local.remove(['licenseKey', 'licenseType', 'licenseExpires', 'licenseVerified'])
+        .then(() => sendResponse({ success: true }));
+      return true;
+
+    case 'getStats':
+      getStats().then(sendResponse);
+      return true;
+
+    case 'resetStats':
+      resetStats().then(sendResponse);
+      return true;
+
+    case 'getDiagnostics':
+      getDiagnostics().then(sendResponse);
+      return true;
+
+    case 'setStrictMode':
+      setStrictMode(request.value).then(sendResponse);
+      return true;
+
+    case 'pauseSite':
+      pauseSite(request.domain, request.duration || 600000).then(sendResponse);
+      return true;
+
+    case 'getPauseStatus':
+      getPauseStatus(request.domain).then(r => sendResponse(r));
+      return true;
+
+    case 'unpauseSite':
+      unpauseSite(request.domain).then(sendResponse);
+      return true;
+
+    case 'getMalwareLogs':
+      browserAPI.storage.local.get(MALWARE_LOG_KEY).then(r => {
+        sendResponse({ logs: r[MALWARE_LOG_KEY] || [] });
+      });
+      return true;
+
+    case 'clearMalwareLogs':
+      browserAPI.storage.local.remove(MALWARE_LOG_KEY).then(() => {
+        sendResponse({ success: true });
+      });
+      return true;
+
+    default:
+      sendResponse({ error: 'Unknown action' });
+      return false;
+  }
+});
+
+// === TRACK BLOCKED REQUESTS & MALWARE ===
+if (browserAPI.declarativeNetRequest.onRuleMatchedDebug) {
+  browserAPI.declarativeNetRequest.onRuleMatchedDebug.addListener(async (info) => {
+    try {
+      // Malware Check
+      if (info.rule.ruleId === 9001) {
+        logMalwareBlock({
+          url: info.request.url,
+          tabId: info.request.tabId,
+          type: info.request.type,
+          ruleId: 9001
+        });
+      }
+
+      // Stats
+      const stats = await getStats();
+      stats.totalBlocked = (stats.totalBlocked || 0) + 1;
+
+      const url = info.request?.url;
+      if (url) {
+        try {
+          const domain = new URL(url).hostname;
+          stats.blockedByDomain = stats.blockedByDomain || {};
+          stats.blockedByDomain[domain] = (stats.blockedByDomain[domain] || 0) + 1;
+        } catch (e) { /* invalid url */ }
+      }
+
+      await browserAPI.storage.local.set({ stats });
+      reportStats(stats);
+    } catch (e) {
+      // Non-critical
+    }
+  });
+}
+
+// Fallback: webRequest error listener for malware URLs (if DNR debug not avail)
+// Bug 6 Fix: Also increment diagnostics.endpointsBlocked
+if (browserAPI.webRequest && browserAPI.webRequest.onErrorOccurred) {
+  browserAPI.webRequest.onErrorOccurred.addListener(async (details) => {
+    // Malware Check
+    if (GHOSTPULSE_PATTERNS.some(p => p.test(details.url))) {
+      logMalwareBlock({
+        url: details.url,
+        tabId: details.tabId,
+        type: details.type,
+        error: details.error
+      });
+    }
+    
+    // Count blocks + diagnostics + pulse icon
+    if (details.error === 'net::ERR_BLOCKED_BY_CLIENT') {
+        try {
+          const s = await getStats();
+          s.totalBlocked = (s.totalBlocked || 0) + 1;
+          if (details.url) {
+            try {
+              const domain = new URL(details.url).hostname;
+              s.blockedByDomain = s.blockedByDomain || {};
+              s.blockedByDomain[domain] = (s.blockedByDomain[domain] || 0) + 1;
+            } catch (e) {}
+          }
+          await browserAPI.storage.local.set({ stats: s });
+
+          const diag = await getDiagnostics();
+          diag.endpointsBlocked = (diag.endpointsBlocked || 0) + 1;
+          await browserAPI.storage.local.set({ diagnostics: diag });
+
+          pulseIcon();
+          browserAPI.runtime.sendMessage({ action: 'blockOccurred' }).catch(() => {});
+        } catch (e) {}
+    }
+  }, { urls: ['<all_urls>'] }); // Broadened to catch all blocked endpoints for stats
+}
+
+// === INIT ===
+browserAPI.runtime.onInstalled.addListener(async (details) => {
+  await getExtensionId();
+  console.log('[AIShield] Extension installed/updated, ID:', extensionId);
+
+  if (details.reason === 'install') {
+    await resetStats();
+  }
+
+  scanExistingTabsForKeyPages();
+});
+
+// Helper for getExtensionId call in handlers
+async function getOrCreateExtensionId() {
+  return await getExtensionId();
+}
+
+scanExistingTabsForKeyPages();
