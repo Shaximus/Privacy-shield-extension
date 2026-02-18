@@ -63,7 +63,7 @@ const LICENSE_KEY_REGEX = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/;
 
 // Rate limiting
 const VERIFY_COOLDOWN = 5000;
-const STATS_INTERVAL = 300000;
+const STATS_INTERVAL = 3600000;
 
 // State
 let lastVerifyAttempt = 0;

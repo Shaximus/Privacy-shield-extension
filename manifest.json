@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "AI Privacy Shield",
     "version": "2.3.0",
-    "description": "Block 133+ AI surveillance trackers and detect model substitution fraud. Protects against keystroke logging, session recording, telemetry, and verifies you receive the AI model you pay for.",
+    "description": "Block 170+ AI surveillance trackers and detect model substitution fraud. Protects against keystroke logging, session recording, telemetry, and verifies you receive the AI model you pay for.",
     "externally_connectable": {
         "matches": [
             "https://reflexionsoftware.com/*",
