@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // so we only count static to avoid double-counting
     (async function updateRuleCount() {
         var el = document.getElementById('ruleCount');
-        if (el) el.textContent = '170+';
+        if (el) el.textContent = '216+';
     })();
 
     // Check license status on popup open

@@ -180,6 +180,58 @@
 
   {"id":308,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||l.facebook.com/l.php","resourceTypes":["main_frame","sub_frame"]}},
 
-  {"id":309,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||claude.ai/sentry","resourceTypes":["xmlhttprequest","ping","other"]}}
+  {"id":309,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||claude.ai/sentry","resourceTypes":["xmlhttprequest","ping","other"]}},
+
+  {"id":310,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||snippet.maze.co","resourceTypes":["script"]}},
+  {"id":311,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||app.maze.co","resourceTypes":["script","xmlhttprequest"]}},
+  {"id":312,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.maze.co","resourceTypes":["xmlhttprequest"]}},
+  {"id":313,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||datadoghq.com","resourceTypes":["script","xmlhttprequest","ping","other"]}},
+  {"id":314,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||browser-intake-datadoghq.com","resourceTypes":["xmlhttprequest","ping","other"]}},
+  {"id":315,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||widget.intercom.io","resourceTypes":["script","xmlhttprequest","sub_frame","other"]}},
+  {"id":316,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api-iam.intercom.io","resourceTypes":["script","xmlhttprequest","other"]}},
+  {"id":317,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||intercomassets.com","resourceTypes":["script","image","font","other"]}},
+  {"id":318,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||qualtrics.com","resourceTypes":["sub_frame","script","xmlhttprequest","image","other"]}},
+  {"id":319,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||siteintercept.qualtrics.com","resourceTypes":["script","xmlhttprequest","other"]}},
+  {"id":320,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||pendo.io","resourceTypes":["xmlhttprequest","script","other"]}},
+  {"id":321,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.amplitude.com","resourceTypes":["xmlhttprequest"]}},
+  {"id":322,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||s-cdn.anthropic.com/s.js","resourceTypes":["script"]}},
+  {"id":323,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.segment.io","resourceTypes":["xmlhttprequest","ping","other"]}},
+
+  {"id":324,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||cdn.segment.com","resourceTypes":["script"]}},
+  {"id":325,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.segment.io/v1/identify","resourceTypes":["xmlhttprequest","ping","other"]}},
+  {"id":326,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.segment.io/v1/track","resourceTypes":["xmlhttprequest","ping","other"]}},
+  {"id":327,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.segment.io/v1/page","resourceTypes":["xmlhttprequest","ping","other"]}},
+
+  {"id":328,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||featuregates.org","resourceTypes":["xmlhttprequest","script","other"]}},
+  {"id":329,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||statsigapi.net","resourceTypes":["xmlhttprequest","script","other"]}},
+  {"id":330,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.statsig.com","resourceTypes":["xmlhttprequest","other"]}},
+  {"id":331,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||cdn.growthbook.io","resourceTypes":["script","xmlhttprequest"]}},
+  {"id":332,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||growthbook.io/api","resourceTypes":["xmlhttprequest","script"]}},
+
+  {"id":333,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.deepsense.ai","resourceTypes":["xmlhttprequest","other"]}},
+  {"id":334,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.dice.com","resourceTypes":["xmlhttprequest","other"]}},
+  {"id":335,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.lastminute.com","resourceTypes":["xmlhttprequest","other"]}},
+  {"id":336,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.blockscout.com","resourceTypes":["xmlhttprequest","other"]}},
+  {"id":337,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.crypto.com","resourceTypes":["xmlhttprequest"]}},
+  {"id":338,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.kiwi.com","resourceTypes":["xmlhttprequest"]}},
+  {"id":339,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.trivago.com","resourceTypes":["xmlhttprequest"]}},
+  {"id":340,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||pubmed.mcp.claude.com","resourceTypes":["xmlhttprequest"]}},
+  {"id":341,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.benevity.org","resourceTypes":["xmlhttprequest"]}},
+  {"id":342,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.mermaidchart.com","resourceTypes":["xmlhttprequest"]}},
+  {"id":343,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||kg.mcp.learningcommons.org","resourceTypes":["xmlhttprequest"]}},
+  {"id":344,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.hubspot.com/anthropic","resourceTypes":["xmlhttprequest"]}},
+  {"id":345,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.indeed.com/claude","resourceTypes":["xmlhttprequest"]}},
+  {"id":346,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||mcp.zoominfo.com","resourceTypes":["xmlhttprequest"]}},
+  {"id":347,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||day.ai/api/mcp","resourceTypes":["xmlhttprequest"]}},
+  {"id":348,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.fireflies.ai/mcp","resourceTypes":["xmlhttprequest"]}},
+
+  {"id":349,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||accounts.google.com/gsi","resourceTypes":["script","sub_frame","xmlhttprequest"]}},
+  {"id":350,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||googletagmanager.com/gtm.js","resourceTypes":["script"]}},
+  {"id":351,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||pay.link.com","resourceTypes":["script","sub_frame","xmlhttprequest"]}},
+  {"id":352,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||js.stripe.com/v3/fingerprinted","resourceTypes":["script"]}},
+
+  {"id":353,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.healthex.io","resourceTypes":["xmlhttprequest","other"]}},
+  {"id":354,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.demo.healthex.dev","resourceTypes":["xmlhttprequest","other"]}},
+  {"id":355,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||services.functionhealth.com","resourceTypes":["xmlhttprequest","other"]}}
 
 ]

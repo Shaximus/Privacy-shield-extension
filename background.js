@@ -47,7 +47,7 @@ function pulseIcon() {
 const CLIENT_SECRET = 'REPLACE_AT_BUILD_TIME';
 
 // === ENDPOINTS (Updated for v2.3.0 Worker) ===
-const LICENSE_ENDPOINT = 'https://ai-shield-license.kingsley-w-m-curtis.workers.dev/license/verify';
+const LICENSE_ENDPOINT = 'https://ai-shield-license.kingsley-w-m-curtis.workers.dev/verify-license';
 const STATS_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/stats/report';
 const RULES_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/rules/fetch';
 
