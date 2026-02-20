@@ -43,19 +43,17 @@ function pulseIcon() {
   }, 41.67); // 24fps
 }
 
-// Build-time secret (Replaced by build.sh)
-const CLIENT_SECRET = 'REPLACE_AT_BUILD_TIME';
-
-// === ENDPOINTS (Updated for v2.3.0 Worker) ===
-const LICENSE_ENDPOINT = 'https://ai-shield-license.kingsley-w-m-curtis.workers.dev/verify-license';
-const STATS_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/stats/report';
-const RULES_ENDPOINT = 'https://ai-shield-rules.kingsley-w-m-curtis.workers.dev/rules/fetch';
+// === ENDPOINTS (v3.0 — proxied through api.reflexionsoftware.com) ===
+const LICENSE_ENDPOINT = 'https://api.reflexionsoftware.com/license/verify-license';
+const STATS_ENDPOINT = 'https://api.reflexionsoftware.com/rules/report-stats';
+const RULES_ENDPOINT = 'https://api.reflexionsoftware.com/rules/rules';
 
 // Security: Exact origin whitelist
 const ALLOWED_ORIGINS = [
   'https://reflexionsoftware.com',
   'https://www.reflexionsoftware.com',
-  'https://reflexionsoftware.pages.dev'
+  'https://reflexionsoftware.pages.dev',
+  'https://api.reflexionsoftware.com'
 ];
 
 // License key format: XXXXX-XXXXX-XXXXX-XXXXX
@@ -70,22 +68,39 @@ let lastVerifyAttempt = 0;
 let lastStatsReport = 0;
 let extensionId = null;
 
-// === HMAC SECURITY ===
-async function generateHMAC(message, secret) {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const messageData = encoder.encode(message);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw', keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false, ['sign']
+// === ENCRYPTED RULE DECRYPTION ===
+async function decryptRules(payload, iv, licenseKey, ruleSalt) {
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(licenseKey + ruleSalt),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
   );
 
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode("ai-shield-rules-v1"),
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+
+  const encryptedBytes = Uint8Array.from(atob(payload), c => c.charCodeAt(0));
+  const ivBytes = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: ivBytes },
+    key,
+    encryptedBytes
+  );
+
+  return JSON.parse(new TextDecoder().decode(decrypted));
 }
 
 // === MALWARE DETECTION (GHOSTPULSE) ===
@@ -240,24 +255,18 @@ async function verifyLicense(licenseKey) {
 
   try {
     const extId = await getOrCreateExtensionId();
-    const timestamp = Date.now().toString();
-    const signaturePayload = `${licenseKey}:${extId}:${timestamp}`;
-    const signature = await generateHMAC(signaturePayload, CLIENT_SECRET);
 
     const response = await fetch(LICENSE_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-License-Key': licenseKey,
-        'X-Extension-Id': extId,
-        'X-Timestamp': timestamp,
-        'X-Signature': signature
+        'X-Extension-Id': extId
       },
       body: JSON.stringify({
         extensionId: extId,
-        timestamp: timestamp,
         platform: 'chrome',
-        version: '2.3.0'
+        version: '3.0.0'
       })
     });
 
@@ -272,7 +281,8 @@ async function verifyLicense(licenseKey) {
         licenseKey: licenseKey,
         licenseType: data.type || 'premium',
         licenseExpires: data.expires || null,
-        licenseVerified: Date.now()
+        licenseVerified: Date.now(),
+        ruleSalt: data.ruleSalt || null
       });
       await fetchPremiumRules(licenseKey, extId);
       return { success: true, type: data.type };
@@ -285,53 +295,55 @@ async function verifyLicense(licenseKey) {
   }
 }
 
-// === PREMIUM RULES (HMAC + Signature Check) ===
+// === PREMIUM RULES (Encrypted Delivery) ===
 async function fetchPremiumRules(licenseKey, extId) {
   try {
     if (!extId) extId = await getExtensionId();
-    const timestamp = Date.now().toString();
-    const signature = await generateHMAC(
-      `${licenseKey}:${extId}:${timestamp}`, CLIENT_SECRET
-    );
+
+    // Get ruleSalt from storage (set during license verification)
+    const stored = await browserAPI.storage.local.get(['ruleSalt']);
+    const ruleSalt = stored.ruleSalt;
+    if (!ruleSalt) {
+      console.error('[AIShield] No ruleSalt — verify license first');
+      return;
+    }
 
     const response = await fetch(RULES_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-License-Key': licenseKey,
-        'X-Extension-Id': extId,
-        'X-Timestamp': timestamp,
-        'X-Signature': signature
+        'X-Extension-Id': extId
       },
-      body: JSON.stringify({ platform: 'chrome', version: '2.3.0' })
+      body: JSON.stringify({ platform: 'chrome', version: '3.0.0' })
     });
 
     if (!response.ok) return;
     const data = await response.json();
 
-    // Integrity check
-    if (data.rules && data.signature) {
-      const expectedSig = await generateHMAC(
-        JSON.stringify(data.rules), CLIENT_SECRET
-      );
-      if (data.signature !== expectedSig) {
-        console.error('[AIShield] Rule signature mismatch — rules rejected');
-        return;
-      }
+    // Handle "verify first" response
+    if (data.code === 'VERIFY_FIRST') {
+      console.warn('[AIShield] Server says verify first — re-verifying');
+      return;
     }
 
-    if (data.rules && data.rules.length > 0) {
-      // Preserve WAA and Malware rules
-      const existingRules = await browserAPI.declarativeNetRequest.getDynamicRules();
-      const protectedIds = [WAA_RULE_ID, 9001]; 
-      const toRemove = existingRules
-        .map(r => r.id)
-        .filter(id => !protectedIds.includes(id));
+    // Encrypted payload — decrypt with licenseKey + ruleSalt
+    if (data.payload && data.iv) {
+      const rules = await decryptRules(data.payload, data.iv, licenseKey, ruleSalt);
 
-      await browserAPI.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: toRemove,
-        addRules: data.rules
-      });
+      if (rules && rules.length > 0) {
+        // Preserve WAA and Malware rules
+        const existingRules = await browserAPI.declarativeNetRequest.getDynamicRules();
+        const protectedIds = [WAA_RULE_ID, 9001];
+        const toRemove = existingRules
+          .map(r => r.id)
+          .filter(id => !protectedIds.includes(id));
+
+        await browserAPI.declarativeNetRequest.updateDynamicRules({
+          removeRuleIds: toRemove,
+          addRules: rules
+        });
+      }
     }
   } catch (error) {
     console.error('[AIShield] Premium rules fetch failed:', error.message);
@@ -375,24 +387,16 @@ async function reportStats(stats) {
 
   try {
     const extId = await getExtensionId();
-    const timestamp = Date.now().toString();
-    const payload = JSON.stringify({
-      extensionId: extId,
-      stats: stats,
-      platform: 'chrome',
-      timestamp: timestamp
-    });
-
-    const signature = await generateHMAC(payload, CLIENT_SECRET);
 
     await fetch(STATS_ENDPOINT, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Signature': signature,
-        'X-Timestamp': timestamp
-      },
-      body: payload
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        extensionId: extId,
+        stats: stats,
+        platform: 'chrome',
+        timestamp: Date.now().toString()
+      })
     });
   } catch (e) {
     // Non-critical

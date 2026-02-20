@@ -28,11 +28,6 @@
     "declarative_net_request": {
         "rule_resources": [
             {
-                "id": "surveillance_blocklist",
-                "enabled": true,
-                "path": "rules/blocklist.json"
-            },
-            {
                 "id": "google_header_scrub",
                 "enabled": true,
                 "path": "rules/google_header_scrub.json"
@@ -96,6 +91,6 @@
         }
     ],
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://ai-shield-license.kingsley-w-m-curtis.workers.dev https://ai-shield-rules.kingsley-w-m-curtis.workers.dev https://reflexionsoftware.com https://www.reflexionsoftware.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.reflexionsoftware.com https://reflexionsoftware.com https://www.reflexionsoftware.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
     }
 }

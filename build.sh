@@ -1,24 +1,11 @@
 #!/bin/bash
-# AI Privacy Shield - Build Script v2.3.0
+# AI Privacy Shield - Build Script v3.0.0 (Security Hardened)
 
 set -e
 
-echo "AI Privacy Shield - Build Script v2.3.0"
+echo "AI Privacy Shield - Build Script v3.0.0"
 echo "========================================="
 echo ""
-
-# Load CLIENT_SECRET from .env if it exists
-CLIENT_SECRET=""
-if [ -f .env ]; then
-    CLIENT_SECRET=$(grep '^CLIENT_SECRET=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
-fi
-
-if [ -z "$CLIENT_SECRET" ]; then
-    echo "WARNING: No CLIENT_SECRET found in .env"
-    echo "  HMAC signing will use placeholder value."
-    echo "  Create .env with: CLIENT_SECRET=your-secret-here"
-    echo ""
-fi
 
 rm -rf deploy
 mkdir -p deploy
@@ -40,17 +27,11 @@ cp premium.html deploy/chrome/
 cp background.js deploy/chrome/
 cp content-autoactivate.js deploy/chrome/
 cp model-swap-detector.js meta-fingerprint-shield.js deploy/chrome/
-cp rules/blocklist.json deploy/chrome/rules/
+# NO blocklist.json in production — rules fetched encrypted from worker (protects IP)
 cp rules/google_header_scrub.json deploy/chrome/rules/
 cp rules/rules_malware.json deploy/chrome/rules/
 cp -r icons deploy/chrome/
 cp -r animated-icons deploy/chrome/
-
-# Inject CLIENT_SECRET at build time
-if [ -n "$CLIENT_SECRET" ]; then
-    sed -i "s/REPLACE_AT_BUILD_TIME/$CLIENT_SECRET/g" deploy/chrome/background.js
-    echo "  CLIENT_SECRET injected"
-fi
 
 cd deploy/chrome
 zip -r ../ai-privacy-shield-chrome.zip . -x "*.DS_Store" > /dev/null
@@ -71,17 +52,11 @@ cp premium.html deploy/firefox/
 cp background.js deploy/firefox/
 cp content-autoactivate.js deploy/firefox/
 cp model-swap-detector.js meta-fingerprint-shield.js deploy/firefox/
-cp rules/blocklist.json deploy/firefox/rules/
+# NO blocklist.json in production — rules fetched encrypted from worker (protects IP)
 cp rules/google_header_scrub.json deploy/firefox/rules/
 cp rules/rules_malware.json deploy/firefox/rules/
 cp -r icons deploy/firefox/
 cp -r animated-icons deploy/firefox/
-
-# Inject CLIENT_SECRET at build time
-if [ -n "$CLIENT_SECRET" ]; then
-    sed -i "s/REPLACE_AT_BUILD_TIME/$CLIENT_SECRET/g" deploy/firefox/background.js
-    echo "  CLIENT_SECRET injected"
-fi
 
 cd deploy/firefox
 zip -r ../ai-privacy-shield-firefox.zip . -x "*.DS_Store" > /dev/null
@@ -117,9 +92,9 @@ echo ""
 echo "========================================="
 echo "Build complete!"
 echo ""
-echo "PRODUCTION (server-side rules, needs license):"
+echo "PRODUCTION (encrypted rules via api.reflexionsoftware.com):"
 ls -lh deploy/*.zip 2>/dev/null
 echo ""
-echo "TEST (133 static rules baked in, no server needed):"
+echo "TEST (static rules baked in, no server needed):"
 echo "  deploy/chrome-test/ - load as unpacked extension"
 echo ""
