@@ -1,20 +1,20 @@
 /**
- * AIShield Background Service Worker v2.3.0
+ * AIShield Background Service Worker v3.2.0
  *
  * Security Hardened:
- * - HMAC request signing
+ * - Encrypted rule delivery (AES-GCM + PBKDF2)
  * - GHOSTPULSE Malware Detection
  * - Strict Origin Validation
- * - Rule Signature Verification
- * 
- * Bug Fixes:
- * - WAA ID Collision
- * - Pause Persistence
- * - Strict Mode Implementation
- * - Diagnostics Counters
+ * - Multi-provider endpoint failover
+ * - Alarm-based pause cleanup (survives SW restart)
+ * - Production block counter via webRequest.onErrorOccurred
+ * - getMatchedRules polling for company-level breakdown
  */
 
 const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+
+// === VERSION ===
+const EXTENSION_VERSION = '3.2.0';
 
 // === Animated Icon (pulse on block) - Full 145 frame animation ===
 const iconFrames = [];
@@ -43,7 +43,7 @@ function pulseIcon() {
   }, 41.67); // 24fps
 }
 
-// === ENDPOINTS (v3.1 — multi-provider failover) ===
+// === ENDPOINTS (v3.2 — multi-provider failover) ===
 // Primary: Cloudflare proxy. Fallbacks added as infrastructure scales.
 const ENDPOINT_PROVIDERS = [
   { base: 'https://api.reflexionsoftware.com', license: '/license/verify-license', stats: '/rules/report-stats', rules: '/rules/rules' }
@@ -88,6 +88,11 @@ const LICENSE_KEY_REGEX = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/;
 const VERIFY_COOLDOWN = 5000;
 const STATS_INTERVAL = 3600000;
 
+// Block counter polling
+const MATCHED_RULES_POLL_ALARM = 'poll-matched-rules';
+const MATCHED_RULES_POLL_INTERVAL = 1; // minutes
+let lastMatchedRulesTimestamp = Date.now();
+
 // State
 let lastVerifyAttempt = 0;
 let lastStatsReport = 0;
@@ -97,7 +102,7 @@ let extensionId = null;
 async function decryptRules(payload, iv, licenseKey, ruleSalt) {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(licenseKey + ruleSalt),
+    new TextEncoder().encode(licenseKey),
     { name: "PBKDF2" },
     false,
     ["deriveKey"]
@@ -106,7 +111,7 @@ async function decryptRules(payload, iv, licenseKey, ruleSalt) {
   const key = await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: new TextEncoder().encode("ai-shield-rules-v1"),
+      salt: new TextEncoder().encode(ruleSalt),
       iterations: 100000,
       hash: "SHA-256"
     },
@@ -176,8 +181,7 @@ async function logMalwareBlock(details) {
 }
 
 // === SMART WAA DETECTION ===
-// FIX: Moved ID to safe range (Bug 1)
-const WAA_RULE_ID = 100000; 
+const WAA_RULE_ID = 100000;
 const WAA_KEY_PATTERNS = [
   /^https:\/\/aistudio\.google\.com\/(app\/)?apikey/,
   /^https:\/\/makersuite\.google\.com\/(app\/)?apikey/,
@@ -259,7 +263,12 @@ async function getExtensionId() {
   return extensionId;
 }
 
-// === LICENSE VERIFICATION (HMAC) ===
+// Helper alias
+async function getOrCreateExtensionId() {
+  return await getExtensionId();
+}
+
+// === LICENSE VERIFICATION ===
 function validateLicenseKeyFormat(key) {
   return LICENSE_KEY_REGEX.test(key);
 }
@@ -291,7 +300,7 @@ async function verifyLicense(licenseKey) {
       body: JSON.stringify({
         extensionId: extId,
         platform: 'chrome',
-        version: '3.0.0'
+        version: EXTENSION_VERSION
       })
     });
 
@@ -404,15 +413,16 @@ async function fetchPremiumRules(licenseKey, extId) {
         'X-License-Key': licenseKey,
         'X-Extension-Id': extId
       },
-      body: JSON.stringify({ platform: 'chrome', version: '3.0.0' })
+      body: JSON.stringify({ platform: 'chrome', version: EXTENSION_VERSION })
     });
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
-    // Handle "verify first" response
+    // Handle "verify first" response — actually re-verify
     if (data.code === 'VERIFY_FIRST') {
       console.warn('[AIShield] Server says verify first — re-verifying');
+      await verifyLicense(licenseKey);
       return;
     }
 
@@ -441,8 +451,12 @@ async function fetchPremiumRules(licenseKey, extId) {
 }
 
 // === STARTUP RULE RESTORE ===
-// On service worker startup, immediately restore cached rules before server round-trip
 async function restoreCachedRulesOnStartup() {
+  // Reset icon to clean state (may have frozen mid-animation if SW was killed)
+  try {
+    browserAPI.action.setIcon({ path: { '16': 'icons/icon16.png', '48': 'icons/icon48.png', '128': 'icons/icon128.png' } });
+  } catch (e) {}
+
   try {
     const stored = await browserAPI.storage.local.get(['licenseKey', 'licenseType']);
     if (!stored.licenseKey) return; // No license, no rules
@@ -463,12 +477,20 @@ async function restoreCachedRulesOnStartup() {
 // Restore rules as soon as service worker starts
 restoreCachedRulesOnStartup();
 
+// Ensure polling alarm exists (persists across SW restarts, re-create as safety net)
+browserAPI.alarms.get(MATCHED_RULES_POLL_ALARM, (alarm) => {
+  if (!alarm) {
+    browserAPI.alarms.create(MATCHED_RULES_POLL_ALARM, { periodInMinutes: MATCHED_RULES_POLL_INTERVAL });
+  }
+});
+
 // === STATS ===
 async function getStats() {
   const result = await browserAPI.storage.local.get(['stats']);
   return result.stats || {
     totalBlocked: 0,
     blockedByDomain: {},
+    blockedByRule: {},
     lastReset: Date.now()
   };
 }
@@ -477,6 +499,7 @@ async function resetStats() {
   const fresh = {
     totalBlocked: 0,
     blockedByDomain: {},
+    blockedByRule: {},
     lastReset: Date.now()
   };
   await browserAPI.storage.local.set({ stats: fresh });
@@ -500,14 +523,15 @@ async function reportStats(stats) {
 
   try {
     const extId = await getExtensionId();
-
+    // Only send aggregate total — no per-domain data (privacy)
     await fetchWithFailover('stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         extensionId: extId,
-        stats: stats,
+        totalBlocked: stats.totalBlocked || 0,
         platform: 'chrome',
+        version: EXTENSION_VERSION,
         timestamp: Date.now().toString()
       })
     });
@@ -516,23 +540,43 @@ async function reportStats(stats) {
   }
 }
 
-// === SITE PAUSE (Bug 4: Persistence) ===
+// === MATCHED RULES POLLING (Company breakdown for production) ===
+async function pollMatchedRules() {
+  try {
+    if (!browserAPI.declarativeNetRequest.getMatchedRules) return;
+
+    const result = await browserAPI.declarativeNetRequest.getMatchedRules({
+      minTimeStamp: lastMatchedRulesTimestamp
+    });
+    lastMatchedRulesTimestamp = Date.now();
+
+    if (!result || !result.rulesMatchedInfo || result.rulesMatchedInfo.length === 0) return;
+
+    const stats = await getStats();
+    stats.blockedByRule = stats.blockedByRule || {};
+
+    for (const match of result.rulesMatchedInfo) {
+      const ruleId = match.rule.ruleId;
+      stats.blockedByRule[ruleId] = (stats.blockedByRule[ruleId] || 0) + 1;
+    }
+
+    await browserAPI.storage.local.set({ stats });
+  } catch (e) {
+    // getMatchedRules may throw if rate-limited; non-critical
+    console.warn('[AIShield] getMatchedRules poll error:', e.message);
+  }
+}
+
+// === SITE PAUSE (Alarm-based cleanup — survives SW restart) ===
 async function pauseSite(domain, duration) {
   const until = Date.now() + duration;
   const result = await browserAPI.storage.local.get(['pausedSites']);
   const paused = result.pausedSites || {};
   paused[domain] = until;
   await browserAPI.storage.local.set({ pausedSites: paused });
-  
-  // Cleanup
-  setTimeout(async () => {
-    const fresh = await browserAPI.storage.local.get(['pausedSites']);
-    const freshPaused = fresh.pausedSites || {};
-    if (freshPaused[domain] <= Date.now()) {
-      delete freshPaused[domain];
-      await browserAPI.storage.local.set({ pausedSites: freshPaused });
-    }
-  }, duration);
+
+  // Use alarm instead of setTimeout (survives SW restart)
+  await browserAPI.alarms.create(`unpause-${domain}`, { delayInMinutes: Math.max(duration / 60000, 0.5) });
 
   return { success: true, domain, until };
 }
@@ -542,15 +586,17 @@ async function unpauseSite(domain) {
   const paused = result.pausedSites || {};
   delete paused[domain];
   await browserAPI.storage.local.set({ pausedSites: paused });
+  // Clear the alarm if it exists
+  try { await browserAPI.alarms.clear(`unpause-${domain}`); } catch (e) {}
   return { success: true, domain };
 }
 
 async function getPauseStatus(domain) {
   const result = await browserAPI.storage.local.get(['pausedSites']);
   const paused = result.pausedSites || {};
-  
+
   if (!paused[domain]) return { paused: false };
-  
+
   if (Date.now() > paused[domain]) {
     delete paused[domain];
     await browserAPI.storage.local.set({ pausedSites: paused });
@@ -559,7 +605,17 @@ async function getPauseStatus(domain) {
   return { paused: true, until: paused[domain], remaining: paused[domain] - Date.now() };
 }
 
-// === STRICT MODE (Bug 5: Implementation) ===
+// === ALARM HANDLERS ===
+browserAPI.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === MATCHED_RULES_POLL_ALARM) {
+    await pollMatchedRules();
+  } else if (alarm.name.startsWith('unpause-')) {
+    const domain = alarm.name.replace('unpause-', '');
+    await unpauseSite(domain);
+  }
+});
+
+// === STRICT MODE ===
 async function setStrictMode(enabled) {
   await browserAPI.storage.local.set({ strictMode: enabled });
 
@@ -620,13 +676,15 @@ browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case 'getLicenseStatus':
-      browserAPI.storage.local.get(['licenseKey', 'licenseType', 'licenseVerified'])
+      browserAPI.storage.local.get(['licenseKey', 'licenseType', 'licenseVerified', 'licenseExpires'])
         .then(data => {
+          const expired = data.licenseExpires && Date.now() > data.licenseExpires;
           sendResponse({
-            valid: !!data.licenseKey,
-            licensed: !!data.licenseKey,
+            valid: !!data.licenseKey && !expired,
+            licensed: !!data.licenseKey && !expired,
             type: data.licenseType || 'none',
-            verified: data.licenseVerified || null
+            verified: data.licenseVerified || null,
+            expired: !!expired
           });
         });
       return true;
@@ -692,10 +750,11 @@ browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // === TRACK BLOCKED REQUESTS & MALWARE ===
+// Dev-only: onRuleMatchedDebug for malware detection diagnostics
 if (browserAPI.declarativeNetRequest.onRuleMatchedDebug) {
   browserAPI.declarativeNetRequest.onRuleMatchedDebug.addListener(async (info) => {
     try {
-      // Malware Check
+      // Malware Check only — stats are handled by onErrorOccurred (no double counting)
       if (info.rule.ruleId === 9001) {
         logMalwareBlock({
           url: info.request.url,
@@ -704,33 +763,16 @@ if (browserAPI.declarativeNetRequest.onRuleMatchedDebug) {
           ruleId: 9001
         });
       }
-
-      // Stats
-      const stats = await getStats();
-      stats.totalBlocked = (stats.totalBlocked || 0) + 1;
-
-      const url = info.request?.url;
-      if (url) {
-        try {
-          const domain = new URL(url).hostname;
-          stats.blockedByDomain = stats.blockedByDomain || {};
-          stats.blockedByDomain[domain] = (stats.blockedByDomain[domain] || 0) + 1;
-        } catch (e) { /* invalid url */ }
-      }
-
-      await browserAPI.storage.local.set({ stats });
-      reportStats(stats);
-    } catch (e) {
-      // Non-critical
-    }
+    } catch (e) { /* Non-critical */ }
   });
 }
 
-// Fallback: webRequest error listener for malware URLs (if DNR debug not avail)
-// Bug 6 Fix: Also increment diagnostics.endpointsBlocked
+// Production + Dev: onErrorOccurred is the PRIMARY block counter
+// Fires for every declarativeNetRequest block (ERR_BLOCKED_BY_CLIENT)
+// This is the SINGLE source of truth for block counting — no double counting
 if (browserAPI.webRequest && browserAPI.webRequest.onErrorOccurred) {
   browserAPI.webRequest.onErrorOccurred.addListener(async (details) => {
-    // Malware Check
+    // GHOSTPULSE malware detection
     if (GHOSTPULSE_PATTERNS.some(p => p.test(details.url))) {
       logMalwareBlock({
         url: details.url,
@@ -739,30 +781,33 @@ if (browserAPI.webRequest && browserAPI.webRequest.onErrorOccurred) {
         error: details.error
       });
     }
-    
-    // Count blocks + diagnostics + pulse icon
+
+    // Count ALL blocks
     if (details.error === 'net::ERR_BLOCKED_BY_CLIENT') {
-        try {
-          const s = await getStats();
-          s.totalBlocked = (s.totalBlocked || 0) + 1;
-          if (details.url) {
-            try {
-              const domain = new URL(details.url).hostname;
-              s.blockedByDomain = s.blockedByDomain || {};
-              s.blockedByDomain[domain] = (s.blockedByDomain[domain] || 0) + 1;
-            } catch (e) {}
-          }
-          await browserAPI.storage.local.set({ stats: s });
+      try {
+        const s = await getStats();
+        s.totalBlocked = (s.totalBlocked || 0) + 1;
+        if (details.url) {
+          try {
+            const domain = new URL(details.url).hostname;
+            s.blockedByDomain = s.blockedByDomain || {};
+            s.blockedByDomain[domain] = (s.blockedByDomain[domain] || 0) + 1;
+          } catch (e) {}
+        }
+        await browserAPI.storage.local.set({ stats: s });
 
-          const diag = await getDiagnostics();
-          diag.endpointsBlocked = (diag.endpointsBlocked || 0) + 1;
-          await browserAPI.storage.local.set({ diagnostics: diag });
+        const diag = await getDiagnostics();
+        diag.endpointsBlocked = (diag.endpointsBlocked || 0) + 1;
+        await browserAPI.storage.local.set({ diagnostics: diag });
 
-          pulseIcon();
-          browserAPI.runtime.sendMessage({ action: 'blockOccurred' }).catch(() => {});
-        } catch (e) {}
+        pulseIcon();
+        browserAPI.runtime.sendMessage({ action: 'blockOccurred' }).catch(() => {});
+
+        // Periodic stats reporting
+        reportStats(s);
+      } catch (e) {}
     }
-  }, { urls: ['<all_urls>'] }); // Broadened to catch all blocked endpoints for stats
+  }, { urls: ['<all_urls>'] });
 }
 
 // === INIT ===
@@ -774,12 +819,10 @@ browserAPI.runtime.onInstalled.addListener(async (details) => {
     await resetStats();
   }
 
+  // Set up matched rules polling alarm
+  browserAPI.alarms.create(MATCHED_RULES_POLL_ALARM, { periodInMinutes: MATCHED_RULES_POLL_INTERVAL });
+
   scanExistingTabsForKeyPages();
 });
-
-// Helper for getExtensionId call in handlers
-async function getOrCreateExtensionId() {
-  return await getExtensionId();
-}
 
 scanExistingTabsForKeyPages();

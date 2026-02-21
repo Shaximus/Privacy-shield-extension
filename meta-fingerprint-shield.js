@@ -72,6 +72,10 @@
   };
 
   function addCanvasNoise(canvas) {
+    // Only add noise to small canvases (likely fingerprint, not visible content)
+    if (canvas.width > 400 || canvas.height > 400) return;
+    if (canvas.width === 0 || canvas.height === 0) return;
+
     // Add imperceptible noise to canvas data to break fingerprint consistency
     try {
       const ctx = originalGetContext.call(canvas, '2d');

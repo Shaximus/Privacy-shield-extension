@@ -18,7 +18,7 @@
   ];
 
   const currentHost = window.location.hostname;
-  const isAIPlatform = AI_DOMAINS.some(d => currentHost.includes(d));
+  const isAIPlatform = AI_DOMAINS.some(d => currentHost === d || currentHost.endsWith('.' + d));
   if (!isAIPlatform) return;
 
   console.log('[AI Privacy Shield] Model swap detector active on', currentHost);
@@ -315,15 +315,18 @@
         let buffer = '';
 
         // Read until we find the model or hit 10KB
-        while (buffer.length < 10000) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
+        try {
+          while (buffer.length < 10000) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
 
-          returnedModel = extractModelFromStream(buffer);
-          if (returnedModel) break;
+            returnedModel = extractModelFromStream(buffer);
+            if (returnedModel) break;
+          }
+        } finally {
+          reader.cancel().catch(() => {});
         }
-        reader.cancel();
 
       } else if (contentType.includes('application/json')) {
         // JSON response

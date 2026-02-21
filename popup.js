@@ -354,7 +354,8 @@ document.addEventListener('DOMContentLoaded', () => {
             browserAPI.runtime.sendMessage({ action: 'getStats' }, (stats) => {
                 if (browserAPI.runtime.lastError) return;
                 browserAPI.runtime.sendMessage({ action: 'getDiagnostics' }, (diag) => {
-                    const data = { timestamp: new Date().toISOString(), version: '2.3.0', stats, diagnostics: diag };
+                    const version = browserAPI.runtime.getManifest().version;
+                    const data = { timestamp: new Date().toISOString(), version, stats, diagnostics: diag };
                     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -370,8 +371,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pause site buttons
     function pauseSite(durationMs, label) {
         browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (!tabs[0]) return;
-            const domain = new URL(tabs[0].url).hostname;
+            if (!tabs[0] || !tabs[0].url) return;
+            let domain;
+            try {
+                const parsed = new URL(tabs[0].url);
+                if (!['https:', 'http:'].includes(parsed.protocol)) {
+                    alert('Pause is not available on this page.');
+                    return;
+                }
+                domain = parsed.hostname;
+                if (!domain) return;
+            } catch (e) { return; }
             browserAPI.runtime.sendMessage({ action: 'pauseSite', domain, duration: durationMs }, (response) => {
                 if (response && response.success) alert(`Paused on ${domain} for ${label}`);
             });
@@ -392,7 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportBtn = document.getElementById('reportTrackerButton');
     if (reportBtn) {
         reportBtn.addEventListener('click', () => {
-            browserAPI.tabs.create({ url: 'https://github.com/anthropics/claude-code/issues' });
+            browserAPI.tabs.create({ url: 'https://reflexionsoftware.com/report-tracker' });
         });
     }
 
