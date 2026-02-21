@@ -1,0 +1,10 @@
+{
+    "appName": {
+        "message": "AI Privacy Shield",
+        "description": "Extension name"
+    },
+    "appDescription": {
+        "message": "Block 133+ AI surveillance trackers and detect model substitution fraud.",
+        "description": "Extension description"
+    }
+}

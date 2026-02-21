@@ -43,10 +43,35 @@ function pulseIcon() {
   }, 41.67); // 24fps
 }
 
-// === ENDPOINTS (v3.0 — proxied through api.reflexionsoftware.com) ===
-const LICENSE_ENDPOINT = 'https://api.reflexionsoftware.com/license/verify-license';
-const STATS_ENDPOINT = 'https://api.reflexionsoftware.com/rules/report-stats';
-const RULES_ENDPOINT = 'https://api.reflexionsoftware.com/rules/rules';
+// === ENDPOINTS (v3.1 — multi-provider failover) ===
+// Primary: Cloudflare proxy. Fallbacks added as infrastructure scales.
+const ENDPOINT_PROVIDERS = [
+  { base: 'https://api.reflexionsoftware.com', license: '/license/verify-license', stats: '/rules/report-stats', rules: '/rules/rules' }
+  // Future fallbacks:
+  // { base: 'https://api.rfxn.is', license: '/license/verify-license', stats: '/rules/report-stats', rules: '/rules/rules' },
+  // { base: 'https://shield-api.deno.dev', license: '/verify-license', stats: '/report-stats', rules: '/rules' },
+];
+
+// Active endpoints (resolved from first healthy provider)
+let LICENSE_ENDPOINT = ENDPOINT_PROVIDERS[0].base + ENDPOINT_PROVIDERS[0].license;
+let STATS_ENDPOINT = ENDPOINT_PROVIDERS[0].base + ENDPOINT_PROVIDERS[0].stats;
+let RULES_ENDPOINT = ENDPOINT_PROVIDERS[0].base + ENDPOINT_PROVIDERS[0].rules;
+
+// Failover: try each provider until one responds
+async function fetchWithFailover(endpointKey, options) {
+  for (const provider of ENDPOINT_PROVIDERS) {
+    const url = provider.base + provider[endpointKey];
+    try {
+      const response = await fetch(url, { ...options, signal: AbortSignal.timeout(10000) });
+      if (response.ok || response.status === 401 || response.status === 402 || response.status === 429) {
+        return response; // Real response (server is alive, even if auth/rate error)
+      }
+    } catch (e) {
+      console.warn(`[AIShield] Provider ${provider.base} failed:`, e.message);
+    }
+  }
+  throw new Error('All providers unreachable');
+}
 
 // Security: Exact origin whitelist
 const ALLOWED_ORIGINS = [
@@ -256,7 +281,7 @@ async function verifyLicense(licenseKey) {
   try {
     const extId = await getOrCreateExtensionId();
 
-    const response = await fetch(LICENSE_ENDPOINT, {
+    const response = await fetchWithFailover('license', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -295,7 +320,68 @@ async function verifyLicense(licenseKey) {
   }
 }
 
-// === PREMIUM RULES (Encrypted Delivery) ===
+// === RULE CACHE (Survives worker outages) ===
+const RULE_CACHE_KEY = 'ruleCache';
+const RULE_CACHE_FRESH_TTL = 7 * 24 * 60 * 60 * 1000;   // 7 days — use silently
+const RULE_CACHE_STALE_TTL = 30 * 24 * 60 * 60 * 1000;  // 30 days — use with warning
+
+async function cacheEncryptedRules(payload, iv, ruleSalt) {
+  await browserAPI.storage.local.set({
+    [RULE_CACHE_KEY]: {
+      payload,
+      iv,
+      ruleSalt,
+      cachedAt: Date.now(),
+      refreshedAt: Date.now()
+    }
+  });
+  console.log('[AIShield] Rules cached for offline use');
+}
+
+async function loadCachedRules(licenseKey) {
+  const result = await browserAPI.storage.local.get([RULE_CACHE_KEY]);
+  const cache = result[RULE_CACHE_KEY];
+  if (!cache || !cache.payload || !cache.iv || !cache.ruleSalt) return null;
+
+  const age = Date.now() - cache.cachedAt;
+
+  if (age > RULE_CACHE_STALE_TTL) {
+    console.warn('[AIShield] Rule cache expired (>30 days). Rules unavailable offline.');
+    return null;
+  }
+
+  try {
+    const rules = await decryptRules(cache.payload, cache.iv, licenseKey, cache.ruleSalt);
+    if (rules && rules.length > 0) {
+      if (age > RULE_CACHE_FRESH_TTL) {
+        console.warn('[AIShield] Using stale cached rules (>7 days). Will refresh when server available.');
+      } else {
+        console.log('[AIShield] Loaded', rules.length, 'rules from cache');
+      }
+      return rules;
+    }
+  } catch (e) {
+    console.error('[AIShield] Cache decryption failed:', e.message);
+  }
+  return null;
+}
+
+async function applyRules(rules) {
+  if (!rules || rules.length === 0) return;
+  const existingRules = await browserAPI.declarativeNetRequest.getDynamicRules();
+  const protectedIds = [WAA_RULE_ID, 9001];
+  const toRemove = existingRules
+    .map(r => r.id)
+    .filter(id => !protectedIds.includes(id));
+
+  await browserAPI.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: toRemove,
+    addRules: rules
+  });
+  console.log('[AIShield] Applied', rules.length, 'blocking rules');
+}
+
+// === PREMIUM RULES (Encrypted Delivery + Offline Cache) ===
 async function fetchPremiumRules(licenseKey, extId) {
   try {
     if (!extId) extId = await getExtensionId();
@@ -305,10 +391,13 @@ async function fetchPremiumRules(licenseKey, extId) {
     const ruleSalt = stored.ruleSalt;
     if (!ruleSalt) {
       console.error('[AIShield] No ruleSalt — verify license first');
+      // Still try cache with old salt
+      const cachedRules = await loadCachedRules(licenseKey);
+      if (cachedRules) await applyRules(cachedRules);
       return;
     }
 
-    const response = await fetch(RULES_ENDPOINT, {
+    const response = await fetchWithFailover('rules', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -318,7 +407,7 @@ async function fetchPremiumRules(licenseKey, extId) {
       body: JSON.stringify({ platform: 'chrome', version: '3.0.0' })
     });
 
-    if (!response.ok) return;
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
     // Handle "verify first" response
@@ -332,23 +421,47 @@ async function fetchPremiumRules(licenseKey, extId) {
       const rules = await decryptRules(data.payload, data.iv, licenseKey, ruleSalt);
 
       if (rules && rules.length > 0) {
-        // Preserve WAA and Malware rules
-        const existingRules = await browserAPI.declarativeNetRequest.getDynamicRules();
-        const protectedIds = [WAA_RULE_ID, 9001];
-        const toRemove = existingRules
-          .map(r => r.id)
-          .filter(id => !protectedIds.includes(id));
-
-        await browserAPI.declarativeNetRequest.updateDynamicRules({
-          removeRuleIds: toRemove,
-          addRules: rules
-        });
+        await applyRules(rules);
+        // Cache for offline use
+        await cacheEncryptedRules(data.payload, data.iv, ruleSalt);
       }
     }
   } catch (error) {
     console.error('[AIShield] Premium rules fetch failed:', error.message);
+    // FALLBACK: Load from encrypted cache
+    console.log('[AIShield] Attempting to load cached rules...');
+    const cachedRules = await loadCachedRules(licenseKey);
+    if (cachedRules) {
+      await applyRules(cachedRules);
+      console.log('[AIShield] Offline mode: using cached rules');
+    } else {
+      console.warn('[AIShield] No cached rules available. Extension running without blocking rules.');
+    }
   }
 }
+
+// === STARTUP RULE RESTORE ===
+// On service worker startup, immediately restore cached rules before server round-trip
+async function restoreCachedRulesOnStartup() {
+  try {
+    const stored = await browserAPI.storage.local.get(['licenseKey', 'licenseType']);
+    if (!stored.licenseKey) return; // No license, no rules
+
+    const cachedRules = await loadCachedRules(stored.licenseKey);
+    if (cachedRules) {
+      await applyRules(cachedRules);
+      console.log('[AIShield] Startup: restored cached rules immediately');
+      // Background refresh from server
+      const extId = await getExtensionId();
+      fetchPremiumRules(stored.licenseKey, extId); // Fire-and-forget refresh
+    }
+  } catch (e) {
+    console.error('[AIShield] Startup rule restore failed:', e.message);
+  }
+}
+
+// Restore rules as soon as service worker starts
+restoreCachedRulesOnStartup();
 
 // === STATS ===
 async function getStats() {
@@ -388,7 +501,7 @@ async function reportStats(stats) {
   try {
     const extId = await getExtensionId();
 
-    await fetch(STATS_ENDPOINT, {
+    await fetchWithFailover('stats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -519,8 +632,17 @@ browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
 
     case 'deactivateLicense':
-      browserAPI.storage.local.remove(['licenseKey', 'licenseType', 'licenseExpires', 'licenseVerified'])
-        .then(() => sendResponse({ success: true }));
+      browserAPI.storage.local.remove(['licenseKey', 'licenseType', 'licenseExpires', 'licenseVerified', 'ruleSalt', RULE_CACHE_KEY])
+        .then(async () => {
+          // Remove all dynamic rules except WAA and malware
+          const existing = await browserAPI.declarativeNetRequest.getDynamicRules();
+          const protectedIds = [WAA_RULE_ID, 9001];
+          const toRemove = existing.map(r => r.id).filter(id => !protectedIds.includes(id));
+          if (toRemove.length > 0) {
+            await browserAPI.declarativeNetRequest.updateDynamicRules({ removeRuleIds: toRemove });
+          }
+          sendResponse({ success: true });
+        });
       return true;
 
     case 'getStats':

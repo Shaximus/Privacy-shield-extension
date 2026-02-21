@@ -1,0 +1,86 @@
+{
+    "manifest_version": 3,
+    "name": "AI Privacy Shield",
+    "version": "2.3.0",
+    "description": "Block 133+ AI surveillance trackers and detect model substitution fraud. Protects against keystroke logging, session recording, telemetry, and verifies you receive the AI model you pay for.",
+    "browser_specific_settings": {
+        "safari": {
+            "strict_min_version": "16.4"
+        }
+    },
+    "permissions": [
+        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess",
+        "privacy",
+        "storage",
+        "tabs"
+    ],
+    "host_permissions": [
+        "https://*/*",
+        "http://*/*"
+    ],
+    "declarative_net_request": {
+        "rule_resources": [
+            {
+                "id": "surveillance_blocklist",
+                "enabled": true,
+                "path": "rules/blocklist.json"
+            },
+            {
+                "id": "google_header_scrub",
+                "enabled": true,
+                "path": "rules/google_header_scrub.json"
+            },
+            {
+                "id": "ruleset_malware_protection",
+                "enabled": true,
+                "path": "rules/rules_malware.json"
+            }
+        ]
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://reflexionsoftware.com/success*",
+                "https://*.reflexionsoftware.pages.dev/success*"
+            ],
+            "js": ["content-autoactivate.js"],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://claude.ai/*",
+                "https://*.anthropic.com/*",
+                "https://chat.openai.com/*",
+                "https://chatgpt.com/*",
+                "https://*.openai.com/*",
+                "https://gemini.google.com/*",
+                "https://aistudio.google.com/*",
+                "https://grok.x.ai/*",
+                "https://kimi.moonshot.cn/*"
+            ],
+            "js": ["model-swap-detector.js"],
+            "run_at": "document_start",
+            "world": "MAIN"
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://ai-shield-license.kingsley-w-m-curtis.workers.dev https://ai-shield-rules.kingsley-w-m-curtis.workers.dev https://reflexionsoftware.com https://www.reflexionsoftware.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+    }
+}

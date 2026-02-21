@@ -1,0 +1,17 @@
+{
+  "addons": {
+    "ai-privacy-shield@reflexionsoftware.com": {
+      "updates": [
+        {
+          "version": "3.1.0",
+          "update_link": "https://reflexionsoftware.com/downloads/ai-privacy-shield-firefox.xpi",
+          "browser_specific_settings": {
+            "gecko": {
+              "strict_min_version": "109.0"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

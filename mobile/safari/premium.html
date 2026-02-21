@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Privacy Shield Premium</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .container {
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .tier {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+        }
+
+        .tier.premium {
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.2);
+        }
+
+        .tier h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #e0e0e0;
+        }
+
+        .tier.premium h2 {
+            color: #10b981;
+        }
+
+        .tier .price {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        .tier.free .price {
+            color: #a0a0a0;
+        }
+
+        .tier.premium .price {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .features {
+            list-style: none;
+            margin: 1.5rem 0;
+        }
+
+        .features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .features li:last-child {
+            border-bottom: none;
+        }
+
+        .check {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .pricing-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            align-items: center;
+        }
+
+        .pricing-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .pricing-option.active {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .pricing-option:hover {
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+
+        .save-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .upgrade-button {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+            color: white;
+            border: none;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 1.5rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .upgrade-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .blocked-stats {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 2rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 1rem;
+        }
+
+        .blocked-stats .number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #ef4444;
+            margin: 0.5rem 0;
+        }
+
+        .blocked-stats .label {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .pricing-toggle {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .pricing-option {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Continue Your Protection</h1>
+        <p class="subtitle">Keep blocking all 133+ surveillance trackers</p>
+
+        <div class="blocked-stats">
+            <div class="label">Total surveillance you've blocked during trial:</div>
+            <div class="number" id="missedBlocks">0</div>
+            <div class="label">Don't let them track you again - unlock lifetime protection</div>
+        </div>
+
+        <div class="pricing-toggle" style="flex-wrap: wrap;">
+            <div class="pricing-option active" data-plan="lifetime" data-price="$249 once">
+                <strong>Lifetime</strong> - $249
+                <span class="save-badge">BEST VALUE</span>
+            </div>
+            <div class="pricing-option" data-plan="annual" data-price="$99/year">
+                <strong>Annual</strong> - $99/year
+                <span class="save-badge">SAVE 17%</span>
+            </div>
+            <div class="pricing-option" data-plan="monthly" data-price="$9.99/month">
+                <strong>Monthly</strong> - $9.99/month
+            </div>
+        </div>
+
+        <div class="comparison">
+            <div class="tier free">
+                <h2>Free Tier</h2>
+                <div class="price">$0</div>
+                <ul class="features">
+                    <li><span class="check">&#10003;</span> 10 core trackers blocked</li>
+                    <li><span class="check">&#10003;</span> ChatGPT CES Telemetry</li>
+                    <li><span class="check">&#10003;</span> Statsig A/B Testing</li>
+                    <li><span class="check">&#10003;</span> Honeycomb Traces</li>
+                    <li><span class="check">&#10003;</span> Datadog RUM</li>
+                    <li><span class="cross">&#10007;</span> 27+ additional trackers</li>
+                    <li><span class="cross">&#10007;</span> Keystroke logging protection</li>
+                    <li><span class="cross">&#10007;</span> Session recording blocks</li>
+                    <li><span class="cross">&#10007;</span> Priority updates</li>
+                </ul>
+            </div>
+
+            <div class="tier premium">
+                <h2>Premium</h2>
+                <div class="price" id="premiumPrice">$249 once</div>
+                <ul class="features">
+                    <li><span class="check">&#10003;</span> <strong>All 133+ trackers blocked</strong></li>
+                    <li><span class="check">&#10003;</span> Complete surveillance protection</li>
+                    <li><span class="check">&#10003;</span> Keystroke logging prevention</li>
+                    <li><span class="check">&#10003;</span> Session recording blocks</li>
+                    <li><span class="check">&#10003;</span> Meta BZ telemetry</li>
+                    <li><span class="check">&#10003;</span> Cloudflare RUM/NEL</li>
+                    <li><span class="check">&#10003;</span> Google Tag Manager</li>
+                    <li><span class="check">&#10003;</span> Priority tracker updates</li>
+                    <li><span class="check">&#10003;</span> Support development</li>
+                </ul>
+                <button class="upgrade-button" id="upgradeButton">
+                    Upgrade to Premium
+                </button>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem; color: #606060; font-size: 0.9rem;">
+            <p>Secure payment via Stripe | Cancel anytime | 30-day money-back guarantee</p>
+        </div>
+    </div>
+
+    <script>
+        const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+
+        // Pricing toggle
+        const pricingOptions = document.querySelectorAll('.pricing-option');
+        const premiumPrice = document.getElementById('premiumPrice');
+        const upgradeButton = document.getElementById('upgradeButton');
+        let selectedPlan = 'lifetime';
+
+        pricingOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                pricingOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                selectedPlan = option.dataset.plan;
+                premiumPrice.textContent = option.dataset.price;
+            });
+        });
+
+        // Real blocked count from extension storage
+        function animateCounter() {
+            const missedEl = document.getElementById('missedBlocks');
+            browserAPI.storage.local.get(['stats'], (result) => {
+                const target = (result.stats && result.stats.totalBlocked) || 0;
+                if (target === 0) {
+                    missedEl.textContent = '0';
+                    return;
+                }
+                let current = 0;
+                const increment = target / 100;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
+                    }
+                    missedEl.textContent = Math.floor(current).toLocaleString();
+                }, 10);
+            });
+        }
+
+        animateCounter();
+
+        // Upgrade button handler
+        upgradeButton.addEventListener('click', () => {
+            const checkoutUrls = {
+                lifetime: 'https://buy.stripe.com/6oUbJ2e8m2mhcTz1wedAk00?success_url=https://reflexionsoftware.com/success.html?session_id={CHECKOUT_SESSION_ID}',
+                annual: 'https://buy.stripe.com/5kQ6oI2pE7GB7zf2AidAk01?success_url=https://reflexionsoftware.com/success.html?session_id={CHECKOUT_SESSION_ID}',
+                monthly: 'https://buy.stripe.com/8x27sMaWa4up7zf1wedAk02?success_url=https://reflexionsoftware.com/success.html?session_id={CHECKOUT_SESSION_ID}'
+            };
+
+            // Open Stripe checkout in Safari
+            window.open(checkoutUrls[selectedPlan], '_blank');
+        });
+    </script>
+</body>
+</html>
