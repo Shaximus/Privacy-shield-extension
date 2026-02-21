@@ -1,9 +1,9 @@
 #!/bin/bash
-# AI Privacy Shield - Build Script v3.0.0 (Security Hardened)
+# AI Privacy Shield - Build Script v3.2.0
 
 set -e
 
-echo "AI Privacy Shield - Build Script v3.0.0"
+echo "AI Privacy Shield - Build Script v3.2.0"
 echo "========================================="
 echo ""
 
@@ -22,6 +22,7 @@ echo "Building Chrome (production)..."
 mkdir -p deploy/chrome/rules
 cp manifest_prod.json deploy/chrome/manifest.json
 cp popup.html deploy/chrome/popup.html
+cp popup.css deploy/chrome/popup.css
 cp popup.js deploy/chrome/popup.js
 cp premium.html deploy/chrome/
 cp background.js deploy/chrome/
@@ -47,6 +48,7 @@ echo "Building Firefox (production)..."
 mkdir -p deploy/firefox/rules
 cp manifest_prod_firefox.json deploy/firefox/manifest.json 2>/dev/null || cp manifest_firefox.json deploy/firefox/manifest.json
 cp popup.html deploy/firefox/popup.html
+cp popup.css deploy/firefox/popup.css
 cp popup.js deploy/firefox/popup.js
 cp premium.html deploy/firefox/
 cp background.js deploy/firefox/
@@ -72,6 +74,7 @@ echo "Building Chrome (test - static rules)..."
 mkdir -p deploy/chrome-test/rules
 cp manifest.json deploy/chrome-test/manifest.json
 cp popup.html deploy/chrome-test/popup.html
+cp popup.css deploy/chrome-test/popup.css
 cp popup.js deploy/chrome-test/popup.js
 cp premium.html deploy/chrome-test/
 cp background.js deploy/chrome-test/
