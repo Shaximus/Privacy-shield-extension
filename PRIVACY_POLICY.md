@@ -1,6 +1,6 @@
 # AI Privacy Shield - Privacy Policy
 
-**Last Updated:** November 8, 2025
+**Last Updated:** March 8, 2026
 
 ## Our Philosophy
 
@@ -21,12 +21,10 @@ We collect **anonymous, aggregate statistics** to:
 4. Prioritize research efforts
 
 **Data Collected:**
-- **Block counts per domain** (e.g., "Statsig: 1,234 blocks")
-- **Rule effectiveness** (which blocking rules trigger most often)
-- **Platform compatibility** (Chrome version, OS type - for testing)
-- **Performance metrics** (extension load time - to ensure we're not slowing your browser)
-- **Error reports** (if blocking causes page breakage - helps us refine rules)
-- **Geographic region** (country-level only, no city/IP)
+- **Total blocked request count** (aggregate number of surveillance requests blocked)
+- **Platform identifier** ("chrome")
+- **Extension version** (e.g., "3.3.2")
+- **One-time random UUID** (generated via `crypto.randomUUID()` per report, used solely for duplicate detection)
 
 ### User-Submitted Reports (Optional - Manual Submission Only)
 
@@ -60,17 +58,10 @@ Reports are **never automatic** - only submitted when you click "Report" button.
 **Example of collected data:**
 ```json
 {
-  "date": "2025-11-08",
-  "region": "US",
-  "browser": "Chrome 131",
-  "blocks": {
-    "statsig.com": 45,
-    "mixpanel.com": 23,
-    "honeycomb.io": 12
-  },
-  "performance": {
-    "avg_load_time": "12ms"
-  }
+  "totalBlocked": 80,
+  "platform": "chrome",
+  "version": "3.3.2",
+  "reportId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
@@ -83,6 +74,28 @@ We will **NEVER** collect:
 - ❌ Account credentials or session data
 - ❌ Cookies or tracking identifiers
 - ❌ Third-party analytics (no Google Analytics, Mixpanel, Statsig, etc.)
+
+---
+
+## Aggregate Statistics Transmission
+
+AI Privacy Shield optionally transmits aggregate, anonymized blocking statistics to our servers for protection efficacy analysis and extension improvement. Each report contains: total blocked request count and a one-time random identifier for duplicate detection.
+
+**Explicitly excluded:** URLs of visited pages; AI conversation content; browsing history; page content; persistent user identifiers; and any data enabling individual tracking.
+
+**Technical safeguards:**
+- Cryptographically secure random UUID generation (`crypto.randomUUID()`)
+- HTTPS-only transmission
+- Immediate server-side aggregation with no individual record retention
+- 90-day aggregate data retention with automatic deletion
+
+---
+
+## User Rights and Data Retention
+
+- Users may disable aggregate statistics collection at any time through extension settings.
+- No individual user data is retained beyond the immediate processing of statistics reports.
+- Users may request deletion of any server-side data by contacting kingsley.w.m.curtis@gmail.com.
 
 ---
 
@@ -109,7 +122,7 @@ We will **NEVER** collect:
 
 - **Storage:** All data stored on our infrastructure (not third-party cloud)
 - **Encryption:** Data encrypted in transit and at rest
-- **Retention:** Aggregate statistics retained indefinitely for research; individual session data deleted after 30 days
+- **Retention:** Aggregate statistics retained for 90 days with automatic deletion; no individual session data retained
 - **Access:** Only Reflexion Software developers have access (never sold, never shared)
 
 ---
@@ -126,7 +139,7 @@ We will **NEVER** collect:
 
 ## Third-Party Services
 
-We use **NO third-party analytics or tracking services.**
+AI Privacy Shield does not integrate with third-party analytics services, advertising networks, or data brokers. All data processing occurs through infrastructure operated exclusively by Reflexion Software.
 
 Unlike the platforms we block (who use Statsig, Mixpanel, Google Analytics, Honeycomb, etc.), we built our own privacy-respecting statistics infrastructure.
 
@@ -155,7 +168,7 @@ We'll notify users of privacy policy changes via:
 ## Contact
 
 Questions about privacy? Contact us:
-- **Email:** curtis.kingsley@reflexionsoftware.com
+- **Email:** kingsley.w.m.curtis@gmail.com
 - **GitHub:** https://github.com/Pallyman/AIShield
 - **Website:** https://reflexionsoftware.com
 

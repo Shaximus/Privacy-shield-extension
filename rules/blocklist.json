@@ -227,11 +227,41 @@
 
   {"id":349,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||accounts.google.com/gsi","resourceTypes":["script","sub_frame","xmlhttprequest"]}},
   {"id":350,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||googletagmanager.com/gtm.js","resourceTypes":["script"]}},
-  {"id":351,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||pay.link.com","resourceTypes":["script","sub_frame","xmlhttprequest"]}},
-  {"id":352,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||js.stripe.com/v3/fingerprinted","resourceTypes":["script"]}},
+  {"id":351,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||pay.link.com","resourceTypes":["script","sub_frame","xmlhttprequest"],"excludedInitiatorDomains":["buy.stripe.com","checkout.stripe.com","stripe.com","reflexionsoftware.com"]}},
 
   {"id":353,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.healthex.io","resourceTypes":["xmlhttprequest","other"]}},
   {"id":354,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||api.demo.healthex.dev","resourceTypes":["xmlhttprequest","other"]}},
-  {"id":355,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||services.functionhealth.com","resourceTypes":["xmlhttprequest","other"]}}
+  {"id":355,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||services.functionhealth.com","resourceTypes":["xmlhttprequest","other"]}},
+
+  {"id":400,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*grok.com/_data/v1/a/t/*","resourceTypes":["xmlhttprequest","other","ping"]}},
+  {"id":401,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*grok.com/_data/v1/a/engage/*","resourceTypes":["xmlhttprequest","other","ping"]}},
+
+  {"id":402,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||proxsee.pscp.tv","resourceTypes":["xmlhttprequest","script","other","ping"]}},
+
+  {"id":403,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"||castle.io","resourceTypes":["xmlhttprequest","script","other","ping"]}},
+  {"id":404,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*castle.io/v1/risk*","resourceTypes":["xmlhttprequest","other"]}},
+
+  {"id":405,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*socure.com*","resourceTypes":["xmlhttprequest","script","other","ping"]}},
+  {"id":406,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*devicer.socure.com*","resourceTypes":["xmlhttprequest","script","other"]}},
+
+  {"id":407,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*x.com/i/api/1.1/jot*","resourceTypes":["xmlhttprequest","other","ping"]}},
+  {"id":408,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*x.com/i/api/1.1/user_flow*","resourceTypes":["xmlhttprequest","other","ping"]}},
+
+  {"id":409,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*x.com/i/api/2/client_event*","resourceTypes":["xmlhttprequest","other","ping"]}},
+
+  {"id":410,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*google.com/gsi/log*","resourceTypes":["xmlhttprequest","other","ping"]}},
+  {"id":411,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*googlesyndication.com*","resourceTypes":["xmlhttprequest","script","sub_frame","image","other"]}},
+
+  {"id":412,"priority":1,"action":{"type":"block"},"condition":{"urlFilter":"*doubleclick.net*","resourceTypes":["xmlhttprequest","script","sub_frame","image","other","ping"]}},
+
+  {"id":1001,"priority":2,"action":{"type":"modifyHeaders","requestHeaders":[{"header":"x-client-data","operation":"remove"},{"header":"sec-ch-ua","operation":"remove"},{"header":"sec-ch-ua-mobile","operation":"remove"},{"header":"sec-ch-ua-platform","operation":"remove"},{"header":"sec-ch-ua-platform-version","operation":"remove"},{"header":"sec-ch-ua-arch","operation":"remove"},{"header":"sec-ch-ua-bitness","operation":"remove"},{"header":"sec-ch-ua-full-version","operation":"remove"},{"header":"sec-ch-ua-full-version-list","operation":"remove"},{"header":"sec-ch-ua-model","operation":"remove"},{"header":"sec-ch-ua-wow64","operation":"remove"}]},"condition":{"urlFilter":"*://*.google.com/*","resourceTypes":["xmlhttprequest","script","main_frame","sub_frame","image","font","media","other"]}},
+  {"id":1002,"priority":2,"action":{"type":"modifyHeaders","requestHeaders":[{"header":"x-client-data","operation":"remove"},{"header":"sec-ch-ua","operation":"remove"},{"header":"sec-ch-ua-mobile","operation":"remove"},{"header":"sec-ch-ua-platform","operation":"remove"},{"header":"sec-ch-ua-platform-version","operation":"remove"},{"header":"sec-ch-ua-arch","operation":"remove"},{"header":"sec-ch-ua-bitness","operation":"remove"},{"header":"sec-ch-ua-full-version","operation":"remove"},{"header":"sec-ch-ua-full-version-list","operation":"remove"},{"header":"sec-ch-ua-model","operation":"remove"},{"header":"sec-ch-ua-wow64","operation":"remove"}]},"condition":{"urlFilter":"*://*.googleapis.com/*","resourceTypes":["xmlhttprequest","script","main_frame","sub_frame","image","font","media","other"]}},
+
+  {"id":1003,"priority":2,"action":{"type":"modifyHeaders","responseHeaders":[{"header":"set-cookie","operation":"remove"}]},"condition":{"urlFilter":"*://*.google-analytics.com/*","resourceTypes":["main_frame","sub_frame","xmlhttprequest","script","image","other"]}},
+  {"id":1004,"priority":2,"action":{"type":"modifyHeaders","responseHeaders":[{"header":"set-cookie","operation":"remove"}]},"condition":{"urlFilter":"*://*.googletagmanager.com/*","resourceTypes":["main_frame","sub_frame","xmlhttprequest","script","image","other"]}},
+  {"id":1005,"priority":2,"action":{"type":"modifyHeaders","responseHeaders":[{"header":"set-cookie","operation":"remove"}]},"condition":{"urlFilter":"*://*.doubleclick.net/*","resourceTypes":["main_frame","sub_frame","xmlhttprequest","script","image","other"]}},
+  {"id":1006,"priority":2,"action":{"type":"modifyHeaders","responseHeaders":[{"header":"set-cookie","operation":"remove"}]},"condition":{"urlFilter":"*://*.googlesyndication.com/*","resourceTypes":["main_frame","sub_frame","xmlhttprequest","script","image","other"]}},
+  {"id":1007,"priority":2,"action":{"type":"modifyHeaders","responseHeaders":[{"header":"set-cookie","operation":"remove"}]},"condition":{"urlFilter":"*://*.facebook.com/tr/*","resourceTypes":["main_frame","sub_frame","xmlhttprequest","script","image","other"]}},
+  {"id":1008,"priority":2,"action":{"type":"modifyHeaders","responseHeaders":[{"header":"set-cookie","operation":"remove"}]},"condition":{"urlFilter":"*://*.facebook.com/browser_reporting/*","resourceTypes":["main_frame","sub_frame","xmlhttprequest","script","image","other"]}}
 
 ]

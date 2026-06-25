@@ -1,21 +1,26 @@
 /**
  * AIShield Content Script - Auto-activation UI (SECURITY HARDENED)
- * 
+ *
  * Fixes Applied:
  * - P0-5: XSS via innerHTML → DOM-based safe injection
  * - Uses document.createElement instead of innerHTML
  * - All text content set via textContent (escapes HTML)
- * 
- * Bug 7 Fix: Stop interval after successful activation
+ * - Bug 7 Fix: Stop interval after successful activation
+ * - Fix: URL cleanup deferred until after license verification succeeds
+ * - Fix: chrome.runtime.lastError checked on sendMessage
+ * - Fix: browserAPI wrapper for Firefox compatibility
  */
 
 (function() {
   'use strict';
-  
+
+  // Firefox compatibility wrapper
+  const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+
   // Prevent double-injection
   if (window.aishieldAutoActivated) return;
   window.aishieldAutoActivated = true;
-  
+
   const CHECK_INTERVAL = 1000; // Check every second
   const MAX_CHECKS = 10; // Stop after 10 attempts
   let checkCount = 0;
@@ -130,23 +135,29 @@
         }
         
         // Send to background script for verification
-        chrome.runtime.sendMessage(
+        browserAPI.runtime.sendMessage(
           { action: 'verifyLicense', licenseKey: licenseKey },
           (response) => {
+            // Check for runtime errors (e.g. background script not ready)
+            if (browserAPI.runtime.lastError) {
+              console.warn('[AIShield] Runtime error sending activation message:', browserAPI.runtime.lastError.message);
+              return;
+            }
+
             if (response && response.success) {
               showActivationSuccess();
               licenseProcessed = true; // Bug 7 Fix
               clearInterval(checkInterval);
+
+              // Clean up URL AFTER successful verification
+              url.searchParams.delete('aishield_license');
+              url.searchParams.delete('aishield_status');
+              window.history.replaceState({}, document.title, url.toString());
             } else {
               console.warn('[AIShield] License verification failed:', response?.message);
             }
           }
         );
-        
-        // Clean up URL
-        url.searchParams.delete('aishield_license');
-        url.searchParams.delete('aishield_status');
-        window.history.replaceState({}, document.title, url.toString());
       }
     } catch (error) {
       console.error('[AIShield] Error checking license activation:', error);
@@ -176,7 +187,7 @@
   /**
    * Listen for messages from extension
    */
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  browserAPI.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'showActivationSuccess') {
       showActivationSuccess();
       sendResponse({ success: true });
@@ -184,16 +195,45 @@
     return true;
   });
   
-  // Start checking for license activation
+  // Listen for license key from success page (session_id → key lookup flow)
+  // The success page fetches the key via API and dispatches this event
+  window.addEventListener('ai-shield-license-ready', function(e) {
+    if (licenseProcessed) return;
+    const licenseKey = e.detail && e.detail.licenseKey;
+    if (!licenseKey) return;
+
+    const LICENSE_KEY_REGEX = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/;
+    if (!LICENSE_KEY_REGEX.test(licenseKey)) {
+      console.warn('[AIShield] Invalid license key format from page event');
+      return;
+    }
+
+    browserAPI.runtime.sendMessage(
+      { action: 'verifyLicense', licenseKey: licenseKey },
+      (response) => {
+        if (browserAPI.runtime.lastError) {
+          console.warn('[AIShield] Runtime error:', browserAPI.runtime.lastError.message);
+          return;
+        }
+        if (response && response.success) {
+          showActivationSuccess();
+          licenseProcessed = true;
+          clearInterval(checkInterval);
+        }
+      }
+    );
+  });
+
+  // Start checking for license activation (legacy URL param flow)
   checkInterval = setInterval(() => {
     checkCount++;
-    if (!licenseProcessed) checkForLicenseActivation(); // Bug 7 Fix
-    
+    if (!licenseProcessed) checkForLicenseActivation();
+
     if (checkCount >= MAX_CHECKS || licenseProcessed) {
       clearInterval(checkInterval);
     }
   }, CHECK_INTERVAL);
-  
+
   // Initial check
   checkForLicenseActivation();
   

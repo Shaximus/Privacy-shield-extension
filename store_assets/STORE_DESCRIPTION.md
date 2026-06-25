@@ -1,93 +1,53 @@
 # AI Privacy Shield - Chrome Web Store Copy
 
 ## Short Description (132 char max)
-**Block AI surveillance in real-time. 9,000+ requests stopped daily. Evidence-based protection for ChatGPT, Claude, Gemini & more.**
+**Helps prevent unwanted data collection on ChatGPT, Claude, Gemini, and other AI platforms**
 
-**(127 characters)**
+**(87 characters)**
 
 ---
 
 ## Detailed Description
 
-**Stop AI Companies From Spying On You**
+**Your AI conversations are being monitored.** Every question you ask ChatGPT, Claude, or Gemini--every personal detail, professional concern, and creative exploration--is captured by surveillance trackers embedded in AI platform infrastructure. AI Privacy Shield helps you maintain control over what you share.
 
-Every time you use ChatGPT, Claude, Gemini, or other AI platforms, they're not just answering your questions—they're tracking everything you do.
+### What AI Privacy Shield Does
 
-- **9,185 surveillance requests** blocked from a single ChatGPT session
-- **8,844 tracking attempts** stopped on Claude.ai
-- **72.3% of all requests** are pure telemetry, not AI responses
+AI Privacy Shield helps prevent unwanted data collection and surveillance tracking when you use AI platforms. It reduces embedded trackers, helps prevent device fingerprinting, and limits behavioral profiling--protecting your conversations, interests, and identity from platform surveillance.
 
-**AI Privacy Shield blocks this surveillance in real-time.**
+### How It Works
 
-### What We Block
+- **Network-level filtering:** Helps prevent connections to known tracker domains using efficient, rule-based protection
+- **First-party script protection:** Limits embedded tracking scripts that evade network-level detection
+- **Canvas fingerprint randomization:** Helps prevent persistent device identification across sessions
+- **Regular rule updates:** Licensed users receive encrypted rule updates as new trackers are discovered
+- **Transparent operation:** Clear visibility into what's being protected, with no mystery about extension behavior
 
-**37+ Documented Tracking Endpoints:**
-- Segment / Mixpanel (user profiling)
-- Statsig (A/B testing & feature flags)
-- Google Analytics / Tag Manager
-- Session replay tools
-- Meta telemetry beacons
-- And dozens more...
+### Platform Coverage
 
-**Platforms Protected:**
-- ChatGPT (OpenAI)
-- Claude (Anthropic)
-- Gemini (Google)
-- Grok (xAI)
-- Meta AI
-- More added weekly
+Currently optimized for ChatGPT, Claude, Gemini, DeepSeek, and Meta AI. Architecture supports extension to additional platforms through automatic detection.
 
-### Evidence-Based, Not Theater
+### Privacy-First Design
 
-We don't ask you to "trust us." Every blocking rule is backed by **documented HAR capture evidence**:
+- All protection processing happens on your device--no cloud analysis of your browsing
+- No collection of URLs, page content, or AI conversation text
+- Optional, anonymous aggregate statistics to improve protection (can be disabled in extension settings)
+- Open, auditable protection rules with no hidden functionality
 
-- 83MB ChatGPT capture showing 1,624 requests
-- 40MB Anthropic traffic analysis
-- SHA256-verified evidence packages
-- Updated weekly with new findings
+### Why These Permissions
 
-**See exactly what we block** in the extension popup - every company, every request, with real-time counters.
+- **Network protection permissions:** Enable identification and prevention of tracker connections across AI platforms
+- **Universal site access:** Required because AI platforms use diverse domains and subdomains that change over time; protection is strictly limited to tracker detection
+- **Script injection capability:** Essential for limiting first-party tracking scripts that execute before network requests are made
+- **Storage and alarms:** Support user preferences and periodic maintenance functions
 
-### Key Features
+Each permission is used exclusively for protection--no data collection, no browsing history access, no external transmission beyond optional aggregate statistics.
 
-**Real-Time Protection**
-- Blocks surveillance before data leaves your browser
-- Animated shield icon pulses when actively blocking
-- Live stats showing exactly what's being stopped
+### Getting Started
 
-**Granular Control**
-- Enable/disable per platform
-- See breakdown by tracking company
-- Optional "Strict Google Mode" for maximum privacy
-
-**Weekly Updates**
-- New platforms added every week
-- Fresh evidence published regularly
-- Active development, not abandoned software
-
-**No Phone-Home**
-- Extension doesn't collect your data
-- No account required
-- Open blocking rules (inspect anytime)
-
-### Pricing
-
-**Try free for 1 week**, then choose:
-- $0.99/month (flexible)
-- $9.99/year (**BEST VALUE** - 17% savings)
-- $24.99 lifetime (one-time, own forever)
-
-### Why This Matters
-
-AI companies claim they "respect privacy" while firing **thousands of tracking requests per session**. They profile your behavior, A/B test on you without consent, and log everything for "improvement."
-
-**You deserve to use AI without being surveilled.**
-
-This extension gives you that control. Real protection. Real evidence. No bullshit.
+Activate your free 7-day trial to enable protection — no payment required upfront. After the trial: $9.99/month | $99/year | $249 lifetime.
 
 ---
 
 **Questions? Evidence requests? Security concerns?**
 Visit our GitHub for full documentation, evidence packages, and technical deep-dives.
-
-**Built by privacy advocates who actually verify claims.**

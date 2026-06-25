@@ -25,7 +25,7 @@
       }
       return originalCookieSetter.call(this, value);
     },
-    configurable: true
+    configurable: false
   });
 
   // Delete existing dpr/wd cookies if already set

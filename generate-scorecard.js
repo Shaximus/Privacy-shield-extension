@@ -91,7 +91,7 @@ Download: [AI Privacy Shield](https://github.com/your-username/ai-privacy-shield
 
 ---
 
-*Report generated from AI Privacy Shield v${data.version || '1.4.0'}*
+*Report generated from AI Privacy Shield v${data.version || '3.3.1'}*
 *No PII included - only blocking statistics*
 `;
 

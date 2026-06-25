@@ -1,122 +1,172 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>AI Privacy Shield</title>
     <link rel="stylesheet" href="popup.css">
 </head>
+<body class="unlicensed">
 
-<body>
-    <h1>
-        <img src="icons/shield_animated.webp" class="shield-icon" alt="AI Privacy Shield" />
-        AI Privacy Shield
-    </h1>
-
-    <div class="status status-active" id="statusActive" style="display: none;">
-        ACTIVE - Full Protection Enabled
-    </div>
-
-    <div class="status status-inactive" id="statusInactive" style="display: block;">
-        LICENSE REQUIRED
-    </div>
-
-    <!-- License Input Section -->
-    <div id="licenseSection" class="stats-container" style="display: block;">
-        <div style="text-align: center; margin-bottom: 12px;">
-            <div style="font-size: 13px; color: #ff6b6b; margin-bottom: 8px;">Enter your license key to activate protection</div>
+    <!-- Header -->
+    <header class="popup-header">
+        <div class="header-brand">
+            <img class="header-shield" src="icons/icon48.png" alt="" width="20" height="20" />
+            <span class="header-title">AI Privacy Shield</span>
         </div>
-        <input type="text" id="licenseInput" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
-        <button id="activateBtn" class="activate-btn" style="margin-top: 10px;">
-            Activate License
+        <button class="gear-btn" id="gearBtn" aria-label="Settings">
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+                <circle cx="10" cy="10" r="2.5"/>
+                <path d="M8.3 2h3.4l.4 2.2a6 6 0 011.5.8l2.1-.9 1.7 2.9-1.7 1.4a6 6 0 010 1.2l1.7 1.4-1.7 2.9-2.1-.9a6 6 0 01-1.5.8L11.7 18H8.3l-.4-2.2a6 6 0 01-1.5-.8l-2.1.9-1.7-2.9 1.7-1.4a6 6 0 010-1.2L2.6 8.9l1.7-2.9 2.1.9a6 6 0 011.5-.8L8.3 2z"/>
+            </svg>
         </button>
-        <div id="licenseError" style="color: #ff6b6b; font-size: 12px; text-align: center; margin-top: 8px; display: none;"></div>
-        <div style="text-align: center; margin-top: 12px;">
-            <a href="https://reflexionsoftware.com/#pricing" target="_blank" style="color: #00d4ff; font-size: 12px; text-decoration: none;">
-                Don't have a license? Get one here
-            </a>
+    </header>
+
+    <!-- Hero: Protected -->
+    <div class="hero-status" id="heroProtected">
+        <div class="shield-glow">
+            <div class="shield-ring"></div>
+            <svg class="shield-svg" viewBox="0 0 64 64" width="56" height="56" fill="none">
+                <path class="shield-body" d="M32 4L8 16v16c0 14.4 10.2 27.8 24 31 13.8-3.2 24-16.6 24-31V16L32 4z" fill="rgba(0,212,255,0.06)" stroke="url(#sg)" stroke-width="2"/>
+                <path class="shield-check" d="M22 32l8 8 14-14" stroke="#14F195" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs><linearGradient id="sg" x1="8" y1="4" x2="56" y2="64"><stop stop-color="#00d4ff"/><stop offset="1" stop-color="#9945FF"/></linearGradient></defs>
+            </svg>
+        </div>
+        <div class="hero-label">Protected</div>
+        <div class="hero-sublabel">AI surveillance protection active</div>
+    </div>
+
+    <!-- Hero: Unlicensed -->
+    <div class="hero-unlicensed" id="heroUnlicensed">
+        <div class="shield-glow unlicensed-glow">
+            <div class="shield-ring"></div>
+            <svg class="shield-svg" viewBox="0 0 64 64" width="56" height="56" fill="none">
+                <path d="M32 4L8 16v16c0 14.4 10.2 27.8 24 31 13.8-3.2 24-16.6 24-31V16L32 4z" fill="rgba(255,107,107,0.06)" stroke="#ff6b6b" stroke-width="2"/>
+                <path d="M24 24l16 16M40 24L24 40" stroke="#ff6b6b" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="hero-label ">Basic Protection</div>
+        <div class="hero-sublabel">Local surveillance blocking active</div>
+    </div>
+
+    <!-- Purchase CTA -->
+    <div class="license-card" id="licenseSection">
+        <a href="https://reflexionsoftware.com/#pricing" target="_blank" id="purchaseBtn" class="activate-btn purchase-btn-link">Start Free Trial</a>
+        <div id="licenseError" class="license-error hidden"></div>
+        <div id="manualKeyToggle" class="manual-key-toggle">
+            <a href="#" id="showKeyInput" class="manual-key-link">Already have a license key?</a>
+        </div>
+        <div id="manualKeySection" class="manual-key-section">
+            <input type="text" id="licenseInput" placeholder="XXXXX-XXXXX-XXXXX-XXXXX" />
+            <button id="activateBtn" class="activate-btn manual-activate-btn">Activate</button>
         </div>
     </div>
 
-    <div class="total-blocked" id="totalBlocked">0</div>
-    <div class="blocked-label">Surveillance Requests Blocked</div>
-
-    <div class="stats-container tier-premium" id="tierStatus">
-        <div style="text-align: center; margin-bottom: 8px;">
-            <div style="font-size: 11px; color: #a0a0a0; text-transform: uppercase; letter-spacing: 0.5px;">Protection Level</div>
-            <div style="font-size: 16px; font-weight: 700; color: #14F195; margin: 4px 0;" id="trialStatus">PREMIUM</div>
-            <div style="font-size: 13px; color: #c0c0c0;"><span id="daysRemaining">Full protection</span> <strong style="color: #00d4ff;"><span id="ruleCount">...</span> trackers blocked</strong></div>
+    <!-- Stats Triptych -->
+    <div class="stats-triptych" id="statsTriptych">
+        <div class="stat-col">
+            <div class="stat-number" id="totalBlocked">0</div>
+            <div class="stat-label">Blocked</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-col">
+            <div class="stat-number" id="protectedSince">&mdash;</div>
+            <div class="stat-label">Uptime</div>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-col">
+            <div class="stat-number" id="ruleCount">—</div>
+            <div class="stat-label">Rules</div>
         </div>
     </div>
 
-    <div class="stats-container">
-        <div class="stat-row">
-            <span class="stat-label">Protected Since</span>
-            <span class="stat-value" id="protectedSince">---</span>
+    <!-- Company Card -->
+    <div class="company-card" id="companyCard">
+        <div class="company-header">
+            <span>Blocked by Company</span>
+            <span class="company-count" id="companyCount">0 src</span>
+        </div>
+        <div class="company-list" id="domainList">
+            <div class="empty-state">No surveillance blocked yet</div>
         </div>
     </div>
 
-    <div class="stats-container">
-        <div style="font-size: 13px; color: #a0a0a0; margin-bottom: 8px; font-weight: 600;">
-            Blocked by Surveillance Company:
-        </div>
-        <div class="domain-list" id="domainList">
-            <div style="text-align: center; color: #666; padding: 20px; font-size: 12px;">
-                No surveillance blocked yet
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button class="tool-btn" id="pauseSiteButton30" data-tooltip="Pause 30s">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><rect x="5" y="4" width="3" height="12" rx="1"/><rect x="12" y="4" width="3" height="12" rx="1"/></svg>
+        </button>
+        <button class="tool-btn" id="pauseSiteButton" data-tooltip="Pause 10m">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v5l3 2"/></svg>
+        </button>
+        <button class="tool-btn" id="diagnosticsButton" data-tooltip="Diagnostics">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><rect x="3" y="12" width="3" height="5" rx="0.5"/><rect x="8.5" y="7" width="3" height="10" rx="0.5"/><rect x="14" y="3" width="3" height="14" rx="0.5"/></svg>
+        </button>
+        <button class="tool-btn" id="exportButton" data-tooltip="Export JSON">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v10M6 9l4 4 4-4"/><path d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2"/></svg>
+        </button>
+        <button class="tool-btn" id="evidenceButton" data-tooltip="Evidence">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 3h7l4 4v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4"/><path d="M7 10h6M7 13h4" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tool-btn" id="reportTrackerButton" data-tooltip="Report">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 3v14"/><path d="M4 4c3-2 6 0 8-1s4-1 5 1v8c-1-2-3-1-5 0s-5 1-8-1" fill="currentColor" opacity="0.6" stroke="none"/></svg>
+        </button>
+        <button class="tool-btn" id="resetButton" data-tooltip="Reset Stats">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a6 6 0 1011.3-3"/><path d="M14 3l1.5 4-4-1"/></svg>
+        </button>
+    </div>
+
+    <!-- Diagnostics Panel -->
+    <div id="diagnosticsPanel" class="diag-panel">
+        <div class="diag-title">Real-Time Diagnostics</div>
+        <div class="diag-grid">
+            <div class="diag-item">
+                <div class="diag-value" id="diagHeadersStripped">0</div>
+                <div class="diag-label">Headers stripped</div>
+            </div>
+            <div class="diag-item">
+                <div class="diag-value" id="diagClientHints">0</div>
+                <div class="diag-label">Client Hints blocked</div>
+            </div>
+            <div class="diag-item">
+                <div class="diag-value" id="diagCookiesDeleted">0</div>
+                <div class="diag-label">Cookies deleted</div>
+            </div>
+            <div class="diag-item">
+                <div class="diag-value" id="diagEndpointsBlocked">0</div>
+                <div class="diag-label">Endpoints blocked</div>
             </div>
         </div>
     </div>
 
-    <div class="stats-container">
-        <div class="stat-row">
-            <span class="stat-label" id="strictLabel">Strict Google Mode: OFF</span>
-            <span class="stat-value">
-                <input type="checkbox" id="strictToggle" style="width: 18px; height: 18px; cursor: pointer; accent-color: #9945FF;" />
-            </span>
-        </div>
-        <div style="font-size: 11px; color: #888; margin-top: 6px;">
-            Blocks Google analytics cookies (_gcl_*, _ga*, NID). May sign you out or disable some account features.
+    <!-- Footer -->
+    <div class="popup-footer">
+        <a href="https://reflexionsoftware.com" target="_blank">Reflexion Software</a>
+    </div>
+
+    <!-- Gear Menu -->
+    <div class="gear-menu hidden" id="gearMenu">
+        <a href="https://reflexionsoftware.com" target="_blank" class="gear-item">Manage Subscription</a>
+        <a href="https://reflexionsoftware.com/#pricing" target="_blank" class="gear-item">Pricing & Plans</a>
+        <div class="gear-item gear-toggle" id="statsToggle">
+            <span>Anonymous Stats</span>
+            <span class="toggle-indicator" id="statsIndicator">ON</span>
         </div>
     </div>
 
-    <button class="reset-button" id="resetButton">Reset Statistics</button>
-    <button class="evidence-button" id="evidenceButton">View Evidence</button>
-    <div style="display: flex; gap: 6px; margin-top: 8px;">
-        <button class="evidence-button" id="pauseSiteButton30" style="flex: 1; margin-top: 0;">Pause 30s</button>
-        <button class="evidence-button" id="pauseSiteButton" style="flex: 1; margin-top: 0;">Pause 10 min</button>
-    </div>
-    <button class="evidence-button" id="reportTrackerButton">Report New Tracker</button>
-    <button class="evidence-button" id="diagnosticsButton">Show Diagnostics</button>
-    <button class="evidence-button" id="exportButton">Export Logs (JSON)</button>
+    <!-- Toast (replaces alert) -->
+    <div class="toast hidden" id="toast"></div>
 
-    <div id="diagnosticsPanel"
-        style="display: none; margin-top: 12px; padding: 12px; background: rgba(124, 58, 237, 0.08); border-radius: 10px; border: 1px solid rgba(124, 58, 237, 0.25);">
-        <div style="font-size: 13px; color: #14F195; margin-bottom: 8px; font-weight: 600;">
-            Real-Time Diagnostics
+    <!-- Confirm Overlay (replaces confirm) -->
+    <div class="confirm-overlay hidden" id="confirmOverlay">
+        <div class="confirm-card">
+            <div class="confirm-msg" id="confirmMsg"></div>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" id="confirmCancel">Cancel</button>
+                <button class="confirm-ok" id="confirmOk">Reset</button>
+            </div>
         </div>
-        <div style="font-size: 11px; color: #a0a0a0; margin-bottom: 8px;">
-            Last 15 minutes:
-        </div>
-        <div style="font-size: 11px; color: #c0c0c0; line-height: 1.6;">
-            <div>Headers stripped (x-client-data): <span id="diagHeadersStripped" style="color: #00d4ff;">0</span></div>
-            <div>Client Hints blocked (sec-ch-ua-*): <span id="diagClientHints" style="color: #00d4ff;">0</span></div>
-            <div>Analytics cookies deleted: <span id="diagCookiesDeleted" style="color: #00d4ff;">0</span></div>
-            <div>Surveillance endpoints blocked: <span id="diagEndpointsBlocked" style="color: #00d4ff;">0</span></div>
-        </div>
-    </div>
-
-    <div class="link-row">
-        <a href="https://reflexionsoftware.com/manage.html" target="_blank">Manage Subscription</a>
-        <span>|</span>
-        <a href="https://reflexionsoftware.com/download.html" target="_blank">Re-download</a>
-    </div>
-
-    <div class="footer">
-        Thank you for supporting AI Privacy Shield!<br>
-        Built by <a href="https://reflexionsoftware.com" target="_blank">Reflexion Software</a>
     </div>
 
     <script src="popup.js"></script>
 </body>
-
 </html>

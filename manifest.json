@@ -1,8 +1,14 @@
 {
     "manifest_version": 3,
     "name": "AI Privacy Shield",
-    "version": "3.2.0",
-    "description": "Block 216+ AI surveillance trackers and detect model substitution fraud. Protects against keystroke logging, session recording, telemetry, and verifies you receive the AI model you pay for.",
+    "version": "3.3.2",
+    "description": "Helps prevent unwanted data collection and surveillance tracking on ChatGPT, Claude, Gemini, DeepSeek, and other AI platforms.",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "ai-privacy-shield@reflexionsoftware.com",
+            "strict_min_version": "109.0"
+        }
+    },
     "externally_connectable": {
         "matches": [
             "https://reflexionsoftware.com/*",
@@ -11,12 +17,9 @@
     },
     "permissions": [
         "alarms",
-        "cookies",
         "declarativeNetRequest",
-        "webRequest",
         "declarativeNetRequestFeedback",
         "declarativeNetRequestWithHostAccess",
-        "notifications",
         "storage",
         "tabs"
     ],
@@ -70,22 +73,6 @@
         },
         {
             "matches": [
-                "https://claude.ai/*",
-                "https://*.anthropic.com/*",
-                "https://chat.openai.com/*",
-                "https://chatgpt.com/*",
-                "https://*.openai.com/*",
-                "https://gemini.google.com/*",
-                "https://aistudio.google.com/*",
-                "https://grok.x.ai/*",
-                "https://kimi.moonshot.cn/*"
-            ],
-            "js": ["model-swap-detector.js"],
-            "run_at": "document_start",
-            "world": "MAIN"
-        },
-        {
-            "matches": [
                 "https://www.meta.ai/*",
                 "https://meta.ai/*"
             ],
@@ -95,6 +82,6 @@
         }
     ],
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.reflexionsoftware.com https://reflexionsoftware.com https://www.reflexionsoftware.com; img-src 'self' data:; style-src 'self'"
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.reflexionsoftware.com https://reflexionsoftware.com https://www.reflexionsoftware.com; img-src 'self' data:; style-src 'self'; font-src 'self'"
     }
 }

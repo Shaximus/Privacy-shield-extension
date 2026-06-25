@@ -51,7 +51,7 @@
             padding-left: 0;
         }
         ul li:before {
-            content: "▸ ";
+            content: "\25B8 ";
             color: #00ff00;
             font-weight: bold;
             margin-right: 5px;
@@ -77,7 +77,7 @@
 </head>
 <body>
     <h1>AI Privacy Shield - Privacy Policy</h1>
-    <p><strong>Last Updated:</strong> November 8, 2025</p>
+    <p><strong>Last Updated:</strong> March 8, 2026</p>
 
     <h2>Our Philosophy</h2>
     <p>AI Privacy Shield exists to protect you from AI platform surveillance. We practice what we preach: <strong>your privacy is non-negotiable.</strong></p>
@@ -96,12 +96,11 @@
 
     <p><strong>Data Collected:</strong></p>
     <ul>
-        <li><strong>Block counts per domain</strong> (e.g., "Statsig: 1,234 blocks")</li>
-        <li><strong>Rule effectiveness</strong> (which blocking rules trigger most often)</li>
-        <li><strong>Platform compatibility</strong> (Chrome version, OS type - for testing)</li>
-        <li><strong>Performance metrics</strong> (extension load time - to ensure we're not slowing your browser)</li>
-        <li><strong>Error reports</strong> (if blocking causes page breakage - helps us refine rules)</li>
-        <li><strong>Geographic region</strong> (country-level only, no city/IP)</li>
+        <li><strong>Total blocked request count</strong> (aggregate number of surveillance requests blocked)</li>
+        <li><strong>Per-tracker-domain counts</strong> (e.g., "statsig.com: 15 blocks")</li>
+        <li><strong>Platform identifier</strong> ("chrome")</li>
+        <li><strong>Extension version</strong> (e.g., "1.2.0")</li>
+        <li><strong>One-time random UUID</strong> (generated via <code>crypto.randomUUID()</code> per report, used solely for duplicate detection)</li>
     </ul>
 
     <h3>User-Submitted Reports (Optional - Manual Submission Only)</h3>
@@ -118,29 +117,45 @@
     <div class="highlight">
         <p><strong>Example of collected data:</strong></p>
         <pre><code>{
-  "date": "2025-11-08",
-  "region": "US",
-  "browser": "Chrome 131",
-  "blocks": {
+  "totalBlocked": 80,
+  "domainCounts": {
     "statsig.com": 45,
     "mixpanel.com": 23,
     "honeycomb.io": 12
   },
-  "performance": {
-    "avg_load_time": "12ms"
-  }
+  "platform": "chrome",
+  "version": "1.2.0",
+  "reportId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }</code></pre>
     </div>
 
     <h3>What We Do NOT Collect</h3>
     <p>We will <strong>NEVER</strong> collect:</p>
     <ul>
-        <li><span class="red-x">❌</span> Personally identifiable information (name, email, IP address)</li>
-        <li><span class="red-x">❌</span> URLs you visit</li>
-        <li><span class="red-x">❌</span> Content of your conversations with AI platforms</li>
-        <li><span class="red-x">❌</span> Account credentials or session data</li>
-        <li><span class="red-x">❌</span> Cookies or tracking identifiers</li>
-        <li><span class="red-x">❌</span> Third-party analytics (no Google Analytics, Mixpanel, Statsig, etc.)</li>
+        <li><span class="red-x">X</span> Personally identifiable information (name, email, IP address)</li>
+        <li><span class="red-x">X</span> URLs you visit</li>
+        <li><span class="red-x">X</span> Content of your conversations with AI platforms</li>
+        <li><span class="red-x">X</span> Account credentials or session data</li>
+        <li><span class="red-x">X</span> Cookies or tracking identifiers</li>
+        <li><span class="red-x">X</span> Third-party analytics (no Google Analytics, Mixpanel, Statsig, etc.)</li>
+    </ul>
+
+    <h2>Aggregate Statistics Transmission</h2>
+    <p>AI Privacy Shield optionally transmits aggregate, anonymized blocking statistics to our servers for protection efficacy analysis and extension improvement. Each report contains: total blocked request count; per-tracker-domain category counts; and a one-time random identifier for duplicate detection.</p>
+    <p><strong>Explicitly excluded:</strong> URLs of visited pages; AI conversation content; browsing history; page content; persistent user identifiers; and any data enabling individual tracking.</p>
+    <p><strong>Technical safeguards:</strong></p>
+    <ul>
+        <li>Cryptographically secure random UUID generation (<code>crypto.randomUUID()</code>)</li>
+        <li>HTTPS-only transmission</li>
+        <li>Immediate server-side aggregation with no individual record retention</li>
+        <li>90-day aggregate data retention with automatic deletion</li>
+    </ul>
+
+    <h2>User Rights and Data Retention</h2>
+    <ul>
+        <li>Users may disable aggregate statistics collection at any time through extension settings.</li>
+        <li>No individual user data is retained beyond the immediate processing of statistics reports.</li>
+        <li>Users may request deletion of any server-side data by contacting <a href="mailto:kingsley.w.m.curtis@gmail.com">kingsley.w.m.curtis@gmail.com</a>.</li>
     </ul>
 
     <h2>How We Use Data</h2>
@@ -169,7 +184,7 @@
     <ul>
         <li><strong>Storage:</strong> All data stored on our infrastructure (not third-party cloud)</li>
         <li><strong>Encryption:</strong> Data encrypted in transit and at rest</li>
-        <li><strong>Retention:</strong> Aggregate statistics retained indefinitely for research; individual session data deleted after 30 days</li>
+        <li><strong>Retention:</strong> Aggregate statistics retained for 90 days with automatic deletion; no individual session data retained</li>
         <li><strong>Access:</strong> Only Reflexion Software developers have access (never sold, never shared)</li>
     </ul>
 
@@ -179,7 +194,7 @@
     <p><strong>No Accounts Required:</strong> The extension works without requiring personal information or account creation.</p>
 
     <h2>Third-Party Services</h2>
-    <p>We use <strong>NO third-party analytics or tracking services.</strong></p>
+    <p>AI Privacy Shield does not integrate with third-party analytics services, advertising networks, or data brokers. All data processing occurs through infrastructure operated exclusively by Reflexion Software.</p>
     <p>Unlike the platforms we block (who use Statsig, Mixpanel, Google Analytics, Honeycomb, etc.), we built our own privacy-respecting statistics infrastructure.</p>
 
     <h2>Evidence-Based Blocking</h2>
@@ -202,7 +217,7 @@
     <h2>Contact</h2>
     <p>Questions about privacy? Contact us:</p>
     <ul>
-        <li><strong>Email:</strong> <a href="mailto:curtis.kingsley@reflexionsoftware.com">curtis.kingsley@reflexionsoftware.com</a></li>
+        <li><strong>Email:</strong> <a href="mailto:kingsley.w.m.curtis@gmail.com">kingsley.w.m.curtis@gmail.com</a></li>
         <li><strong>GitHub:</strong> <a href="https://github.com/Pallyman/AIShield">https://github.com/Pallyman/AIShield</a></li>
         <li><strong>Website:</strong> <a href="https://reflexionsoftware.com">https://reflexionsoftware.com</a></li>
     </ul>

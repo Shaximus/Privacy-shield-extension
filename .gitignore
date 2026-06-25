@@ -3,6 +3,7 @@ _metadata/
 
 # Backup files
 *.backup
+*.backup.*
 *.bak
 
 # Development files
@@ -18,3 +19,8 @@ Thumbs.db
 
 # Deployment files
 deploy
+
+# Operational scripts that belong in the ops repo
+sync-rules-review.sh
+rules/blocklist_review.json
+cloudflare-worker.js

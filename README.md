@@ -2,7 +2,7 @@
 
 **Block AI surveillance while keeping AI platforms functional.**
 
-A browser extension that blocks 133+ surveillance trackers across AI platforms (Anthropic Claude, OpenAI ChatGPT, Google Gemini, xAI Grok, Kimi, Meta AI) and detects model substitution fraud. Keeps platforms fully functional while stopping keystroke logging, session recording, and telemetry.
+A browser extension that blocks surveillance trackers across AI platforms (Anthropic Claude, OpenAI ChatGPT, Google Gemini, xAI Grok, Kimi, Meta AI) and detects model substitution fraud. Keeps platforms fully functional while stopping keystroke logging, session recording, and telemetry.
 
 ---
 
