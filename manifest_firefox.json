@@ -32,7 +32,9 @@
         ]
     },
     "background": {
-        "scripts": ["background.js"]
+        "scripts": [
+            "background.js"
+        ]
     },
     "action": {
         "default_popup": "popup.html",
@@ -50,18 +52,12 @@
     "content_scripts": [
         {
             "matches": [
-                "https://reflexionsoftware.com/success*",
-                "https://*.reflexionsoftware.pages.dev/success*"
-            ],
-            "js": ["content-autoactivate.js"],
-            "run_at": "document_idle"
-        },
-        {
-            "matches": [
                 "https://www.meta.ai/*",
                 "https://meta.ai/*"
             ],
-            "js": ["meta-fingerprint-shield.js"],
+            "js": [
+                "meta-fingerprint-shield.js"
+            ],
             "run_at": "document_start",
             "world": "MAIN"
         }
